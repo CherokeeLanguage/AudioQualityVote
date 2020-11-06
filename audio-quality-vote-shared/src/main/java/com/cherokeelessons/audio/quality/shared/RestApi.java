@@ -15,6 +15,4 @@ public interface RestApi {
 	@Path("user/logout")
 	@GET
 	void logout(@HeaderParam("sessionid")String token);
-	
-	//com.cherokeelessons.audio.quality.shared.RestApiFactory x;
 }

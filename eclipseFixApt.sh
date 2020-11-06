@@ -16,8 +16,8 @@ for x in . *; do
 	rm .settings/org.eclipse.jdt.apt.core.prefs 2> /dev/null || true
 	rm .settings/org.eclipse.jdt.core.prefs 2> /dev/null || true
 	rm .factorypath 2> /dev/null || true
-	$gradle :eclipseJdtApt > /dev/null
-	$gradle :eclipseFactorypath > /dev/null
-	$gradle :eclipseJdt > /dev/null
+	$gradle eclipseJdtApt > /dev/null
+	$gradle eclipseFactorypath > /dev/null
+	$gradle eclipseJdt > /dev/null
 done
 	
