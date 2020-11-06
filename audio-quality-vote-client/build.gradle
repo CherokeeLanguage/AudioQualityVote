@@ -1,0 +1,138 @@
+plugins {
+    id "java"
+    id "war"
+    id "org.wisepersist.gwt" version "1.1.10"
+    id "com.diffplug.eclipse.apt" // version "3.24.0"
+}
+
+sourceCompatibility = JavaVersion.VERSION_11
+targetCompatibility = JavaVersion.VERSION_11
+compileJava {
+    options.release = 11
+}
+ 
+compileJava.options.encoding = 'UTF-8'
+compileTestJava.options.encoding = 'UTF-8'
+
+repositories {
+		jcenter()
+        mavenCentral()
+		maven { url 'https://jitpack.io' }
+}
+ 
+ 
+tasks.withType(org.wisepersist.gradle.plugins.gwt.GwtCompile) {
+	args "-optimize", "0", "-noincremental"
+}
+ 
+tasks.withType(org.wisepersist.gradle.plugins.gwt.GwtSuperDev) {
+	args "-style", "PRETTY", "-strict"
+	jvmArgs "-Dgwt.watchFileChanges=false"
+}
+
+gwt {
+	logLevel = 'INFO'
+ 
+	maxHeapSize = "2048M";
+ 
+	gwtVersion='2.9.0'
+ 
+	modules 'com.cherokeelessons.AudioQualityVote'
+	
+	compiler {
+		src += files("../audio-quality-vote-shared/src/main/resources", "../audio-quality-vote-shared/src/main/java")
+		src += files(compileJava.options.annotationProcessorGeneratedSourcesDirectory)
+		
+		disableClassMetadata = false;
+		
+		strict = true;
+		style = "PRETTY";
+		localWorkers = 2;
+	}
+	
+	superDev {
+		src += files("../audio-quality-vote-shared/src/main/resources", "../audio-quality-vote-shared/src/main/java")
+		src += files(project.eclipse.jdt.apt.genSrcDir)		
+		
+		noPrecompile = true;
+		failOnError = false;
+		bindAddress = "0.0.0.0";
+	}
+	
+	eclipse {
+		addGwtContainer = true;
+	}
+}
+
+configurations {
+  provided
+}
+ 
+war {
+	rootSpec.exclude('**/*.class')
+}
+
+dependencies {
+	gwt 'com.google.gwt:gwt-servlet:'+gwt.gwtVersion
+	gwt 'com.google.gwt:gwt-user:'+gwt.gwtVersion
+	
+	gwt ('javax.inject:javax.inject:1')
+	gwt ('com.google.dagger:dagger-compiler:2.+')
+	gwt ('com.google.dagger:dagger-gwt:2.+')
+	annotationProcessor ('com.google.dagger:dagger-compiler:2.+')
+ 
+	gwt project(':audio-quality-vote-shared')
+	
+	gwt "com.fasterxml.jackson.core:jackson-annotations:2.9.6"
+	gwt "com.fasterxml.jackson.core:jackson-databind:2.9.6"
+	gwt 'com.google.code.findbugs:jsr305:3.0.0' //required for restygwt compile
+	gwt 'com.github.nmorel.gwtjackson:gwt-jackson:0.15.2'
+	gwt 'javax.xml.bind:jaxb-api:2.3.+'
+	
+	//ui
+	gwt 'com.github.gwtmaterialdesign:gwt-material:+'
+	gwt 'com.github.gwtmaterialdesign:gwt-material-addins:+'
+	gwt 'com.github.gwtmaterialdesign:gwt-material-table:+'
+	gwt 'com.github.gwtmaterialdesign:gwt-material-themes:+'
+	
+	gwt 'com.google.elemental2:elemental2-dom:+'
+	
+	//completable futures
+	gwt 'com.ekotrope:gwt-completablefuture:1.0.0'
+	
+	//restapi
+	gwt 'javax.servlet:javax.servlet-api:3.0.1'
+	gwt 'javax.ws.rs:javax.ws.rs-api:2.1.1'
+}
+
+eclipseJdt {
+	doLast{
+    File f = file('.settings/org.eclipse.core.resources.prefs')
+    f.write('eclipse.preferences.version=1\n')
+    f.append('encoding/<project>=utf-8')
+    f = file('.settings/org.eclipse.core.runtime.prefs')
+    f.write('eclipse.preferences.version=1\n')
+    f.append('line.separator=\\n\n')
+}}
+
+eclipse {
+	project {
+		name = 'Audio Quality Vote (UI)'
+	}
+	classpath {
+		plusConfigurations += [configurations.provided]
+		downloadSources=true
+	}
+	jdt {
+		apt {
+			genSrcDir = file('.apt_generated')
+			genTestSrcDir = file('.apt_generated_tests')
+			reconcileEnabled=true
+		}
+		
+		factorypath {
+			plusConfigurations = [ configurations.annotationProcessor, configurations.testAnnotationProcessor ]
+			minusConfigurations = []
+		}
+	}
+}

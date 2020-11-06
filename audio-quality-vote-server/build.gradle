@@ -1,8 +1,7 @@
 plugins {
-  id "java"
+  id "java-library"
   id "eclipse-wtp"
-  id "com.diffplug.eclipse.apt" version "3.24.0"
-  id "org.gretty" version "3.0.3" apply false
+  id "com.diffplug.eclipse.apt" // version "3.24.0"
 }
 
 sourceCompatibility = JavaVersion.VERSION_11
@@ -35,16 +34,10 @@ eclipseJdt {
  
 eclipse {
 	project {
-		name = 'Audio Quality Vote'
+		name = 'Audio Quality Vote (Servlet)'
 	}
 	classpath {
 		downloadSources=true
 	}
 }
 
-allprojects {
-task "create-dirs" {
-	doLast{
-	sourceSets*.java.srcDirs*.each { it.mkdirs();new File(it, ".gitignore").createNewFile() }
-	sourceSets*.resources.srcDirs*.each { it.mkdirs();new File(it, ".gitignore").createNewFile() }
-}}}

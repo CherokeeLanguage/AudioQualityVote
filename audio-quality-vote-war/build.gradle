@@ -1,0 +1,49 @@
+plugins {
+    id "java"
+    id "eclipse-wtp"
+    id "war"
+}
+
+apply plugin: "org.gretty"
+
+sourceCompatibility = JavaVersion.VERSION_11
+targetCompatibility = JavaVersion.VERSION_11
+compileJava {
+    options.release = 11
+}
+
+compileJava.options.encoding = 'UTF-8'
+compileTestJava.options.encoding = 'UTF-8'
+ 
+repositories {
+		jcenter()
+		maven { url 'https://jitpack.io' }
+}
+
+gretty {
+	httpPort = 8080;
+	servletContainer = 'tomcat9'
+	jvmArgs = ['-Dfile.encoding=UTF-8', '-Xmx512M', '-Ddebug=true' ]
+	overlay ':audio-quality-vote-client'
+	overlay ':audio-quality-vote-server'
+	extraResourceBase '../audio-quality-vote-client/build/gwt/out'
+	
+	managedClassReload=false
+	reloadOnClassChange=true
+	recompileOnSourceChange=true
+}
+
+war {
+    archiveName "AudioQualityVote"
+}
+
+eclipse {
+	project {
+		name = 'Audio Quality Vote (War)'
+		referencedProjects
+	}
+	classpath {
+		downloadSources=true
+	}
+	
+}

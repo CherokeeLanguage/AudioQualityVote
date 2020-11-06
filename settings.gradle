@@ -4,6 +4,7 @@ include "audio-quality-vote-client"
 include "audio-quality-vote-shared"
 include "audio-quality-vote-server"
 include "audio-quality-vote-db"
+include "audio-quality-vote-war"
 
 String[] p = []
 
