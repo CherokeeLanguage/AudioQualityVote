@@ -29,7 +29,7 @@ gwt {
  
 	gwtVersion='2.9.0'
  
-	modules 'com.cherokeelessons.audio.quality.AudioQualityVoice'
+	modules 'com.cherokeelessons.audio.quality.AudioQualityVote'
 	
 	compiler {
 		src += files("../audio-quality-vote-shared/src/main/resources", "../audio-quality-vote-shared/src/main/java")
@@ -61,6 +61,8 @@ war {
 }
 
 dependencies {
+	compileOnly project(':audio-quality-vote-shared')
+
 	compileOnly 'com.google.gwt:gwt-servlet:'+gwt.gwtVersion
 	compileOnly 'com.google.gwt:gwt-user:'+gwt.gwtVersion
 	
