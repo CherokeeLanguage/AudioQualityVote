@@ -1,10 +1,7 @@
-plugins {
-    id "java"
-    id "eclipse-wtp"
-    id "war"
-}
-
+apply plugin: "war"
+apply plugin: "eclipse-wtp"
 apply plugin: "org.gretty"
+apply plugin: "com.diffplug.eclipse.apt"
 
 sourceCompatibility = JavaVersion.VERSION_11
 targetCompatibility = JavaVersion.VERSION_11
@@ -45,5 +42,4 @@ eclipse {
 	classpath {
 		downloadSources=true
 	}
-	
 }

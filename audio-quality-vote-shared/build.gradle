@@ -1,8 +1,4 @@
-plugins {
-  id "java-library"
-  id "eclipse-wtp"
-  id "com.diffplug.eclipse.apt" // version "3.24.0"
-}
+apply plugin: "java-library"
 
 sourceCompatibility = JavaVersion.VERSION_11
 targetCompatibility = JavaVersion.VERSION_11
@@ -13,25 +9,12 @@ compileJava {
 compileJava.options.encoding = 'UTF-8'
 compileTestJava.options.encoding = 'UTF-8'
  
-repositories {
-		jcenter()
-    mavenCentral()
-		maven { url 'https://jitpack.io' }
-}
-
 dependencies {
+	implementation 'org.dominokit:domino-rest-shared:1.0-rc.4-SNAPSHOT'
+	annotationProcessor 'org.dominokit:domino-rest-apt:1.0-rc.4-SNAPSHOT'
 }
 
-eclipseJdt {
-	doLast{
-    File f = file('.settings/org.eclipse.core.resources.prefs')
-    f.write('eclipse.preferences.version=1\n')
-    f.append('encoding/<project>=utf-8')
-    f = file('.settings/org.eclipse.core.runtime.prefs')
-    f.write('eclipse.preferences.version=1\n')
-    f.append('line.separator=\\n\n')
-}}
- 
+
 eclipse {
 	project {
 		name = 'Audio Quality Vote (Shared)'
@@ -40,4 +23,3 @@ eclipse {
 		downloadSources=true
 	}
 }
-

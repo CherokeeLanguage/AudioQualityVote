@@ -1,8 +1,6 @@
-plugins {
-  id "java-library"
-  id "eclipse-wtp"
-  id "com.diffplug.eclipse.apt" // version "3.24.0"
-}
+apply plugin: "java-library"
+apply plugin: "eclipse-wtp"
+apply plugin: "com.diffplug.eclipse.apt"
 
 sourceCompatibility = JavaVersion.VERSION_11
 targetCompatibility = JavaVersion.VERSION_11
@@ -25,16 +23,6 @@ dependencies {
 	implementation group: 'com.h2database', name: 'h2', version: '1.4.200'
 }
 
-eclipseJdt {
-	doLast{
-    File f = file('.settings/org.eclipse.core.resources.prefs')
-    f.write('eclipse.preferences.version=1\n')
-    f.append('encoding/<project>=utf-8')
-    f = file('.settings/org.eclipse.core.runtime.prefs')
-    f.write('eclipse.preferences.version=1\n')
-    f.append('line.separator=\\n\n')
-}}
- 
 eclipse {
 	project {
 		name = 'Audio Quality Vote (DB)'

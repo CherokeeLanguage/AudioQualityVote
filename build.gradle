@@ -1,8 +1,9 @@
 plugins {
-  id "java"
+  id "java-library"
   id "eclipse-wtp"
-  id "com.diffplug.eclipse.apt" version "3.24.0"
+  id "com.diffplug.eclipse.apt" version "3.24.0" apply false
   id "org.gretty" version "3.0.3" apply false
+  id "org.wisepersist.gwt" version "1.1.9" apply false
 }
 
 sourceCompatibility = JavaVersion.VERSION_11
@@ -14,37 +15,40 @@ compileJava {
 compileJava.options.encoding = 'UTF-8'
 compileTestJava.options.encoding = 'UTF-8'
  
-repositories {
+
+allprojects {
+	apply plugin: "eclipse-wtp"
+	apply plugin: "com.diffplug.eclipse.apt"
+	repositories {
 		jcenter()
-    mavenCentral()
+		mavenCentral()
 		maven { url 'https://jitpack.io' }
+		maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
+		maven { url "https://repo.vertispan.com/gwt-snapshot" }
+	}
+	task "create-dirs" {
+		doLast{
+			sourceSets*.java.srcDirs*.each { it.mkdirs();new File(it, ".gitignore").createNewFile() }
+			sourceSets*.resources.srcDirs*.each { it.mkdirs();new File(it, ".gitignore").createNewFile() }
+		}
+	}
+	eclipseJdt {
+		doLast{
+		    File f = file('.settings/org.eclipse.core.resources.prefs')
+		    f.write('eclipse.preferences.version=1\n')
+		    f.append('encoding/<project>=utf-8')
+		    f = file('.settings/org.eclipse.core.runtime.prefs')
+		    f.write('eclipse.preferences.version=1\n')
+		    f.append('line.separator=\\n\n')
+		}
+	}
 }
 
 dependencies {
 }
 
-eclipseJdt {
-	doLast{
-    File f = file('.settings/org.eclipse.core.resources.prefs')
-    f.write('eclipse.preferences.version=1\n')
-    f.append('encoding/<project>=utf-8')
-    f = file('.settings/org.eclipse.core.runtime.prefs')
-    f.write('eclipse.preferences.version=1\n')
-    f.append('line.separator=\\n\n')
-}}
- 
 eclipse {
 	project {
 		name = 'Audio Quality Vote'
 	}
-	classpath {
-		downloadSources=true
-	}
 }
-
-allprojects {
-task "create-dirs" {
-	doLast{
-	sourceSets*.java.srcDirs*.each { it.mkdirs();new File(it, ".gitignore").createNewFile() }
-	sourceSets*.resources.srcDirs*.each { it.mkdirs();new File(it, ".gitignore").createNewFile() }
-}}}

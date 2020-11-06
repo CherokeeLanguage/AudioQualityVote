@@ -10,7 +10,7 @@ gradle="$cwd/gradlew"
 for x in . *; do
 	cd "$cwd"
 	if [ ! -d "$x" ]; then continue; fi
-	if [ ! -f "$x"/build.gradle ]; then echo "*** skip $x"; continue; fi
+	if [ ! -f "$x"/build.gradle ]; then continue; fi
 	cd "$x"
 	echo "=== $x"
 	rm .settings/org.eclipse.jdt.apt.core.prefs 2> /dev/null || true

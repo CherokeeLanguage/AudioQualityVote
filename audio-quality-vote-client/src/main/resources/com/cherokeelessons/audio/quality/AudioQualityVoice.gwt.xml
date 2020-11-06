@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE module PUBLIC "-//Google Inc.//DTD Google Web Toolkit 2.8.0//EN" "https://raw.githubusercontent.com/gwtproject/gwt/master/distro-source/core/src/gwt-module.dtd">
+<module rename-to="gwt">
+	<source path="" />
+
+	<entry-point
+		class="com.cherokeelessons.audio.quality.AppEntryPoint" />
+
+	<inherits name="dagger.Dagger" />
+	<inherits name="elemental2.dom.Dom" />
+	<inherits name="gwt.material.design.GwtMaterialDesignBasic" />
+	<inherits name="gwt.material.design.addins.GwtMaterialAddins" />
+	<inherits name="gwt.material.design.themes.ThemeBlue" />
+	<inherits name="gwt.material.design.GwtMaterialTable" />
+	<inherits name="com.google.gwt.logging.Logging" />
+
+	<set-property name="gwt.logging.logLevel" value="INFO" />
+	<set-property name="gwt.logging.enabled" value="TRUE" />
+	<set-property name="gwt.logging.consoleHandler"
+		value="DISABLED" />
+	<set-property name="gwt.logging.developmentModeHandler"
+		value="DISABLED" />
+	<set-property name="gwt.logging.systemHandler"
+		value="DISABLED" />
+
+	<set-configuration-property
+		name="CssResource.enableGss" value="true" />
+</module>
