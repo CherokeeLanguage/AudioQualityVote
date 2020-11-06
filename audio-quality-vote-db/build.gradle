@@ -20,6 +20,9 @@ repositories {
 }
 
 dependencies {
+	implementation group: 'org.jdbi', name: 'jdbi3-core', version: '3.17.0'
+	implementation group: 'org.jdbi', name: 'jdbi3-sqlobject', version: '3.17.0'
+	implementation group: 'com.h2database', name: 'h2', version: '1.4.200'
 }
 
 eclipseJdt {
