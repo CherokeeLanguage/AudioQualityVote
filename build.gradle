@@ -1,0 +1,47 @@
+plugins {
+  id "java"
+  id "eclipse-wtp"  
+}
+
+sourceCompatibility = JavaVersion.VERSION_11
+targetCompatibility = JavaVersion.VERSION_11
+compileJava {
+    options.release = 11
+}
+
+compileJava.options.encoding = 'UTF-8'
+compileTestJava.options.encoding = 'UTF-8'
+ 
+repositories {
+		jcenter()
+    mavenCentral()
+		maven { url 'https://jitpack.io' }
+}
+
+dependencies {
+}
+
+eclipseJdt {
+	doLast{
+    File f = file('.settings/org.eclipse.core.resources.prefs')
+    f.write('eclipse.preferences.version=1\n')
+    f.append('encoding/<project>=utf-8')
+    f = file('.settings/org.eclipse.core.runtime.prefs')
+    f.write('eclipse.preferences.version=1\n')
+    f.append('line.separator=\\n\n')
+}}
+ 
+eclipse {
+	project {
+		name = 'Audio Quality Vote (Parent)'
+	}
+	classpath {
+		downloadSources=true
+	}
+}
+
+task "create-dirs" {
+	doLast{
+	sourceSets*.java.srcDirs*.each { it.mkdirs();new File(it, ".gitignore").createNewFile() }
+	sourceSets*.resources.srcDirs*.each { it.mkdirs();new File(it, ".gitignore").createNewFile() }
+}}
