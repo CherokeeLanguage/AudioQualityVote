@@ -21,8 +21,8 @@ gretty {
 	httpPort = 8080;
 	servletContainer = 'tomcat9'
 	jvmArgs = ['-Dfile.encoding=UTF-8', '-Xmx512M', '-Ddebug=true' ]
-	overlay ':audio-quality-vote-client'
 	overlay ':audio-quality-vote-server'
+	overlay ':audio-quality-vote-ui'
 	extraResourceBase '../audio-quality-vote-client/build/gwt/out'
 	
 	managedClassReload=false
