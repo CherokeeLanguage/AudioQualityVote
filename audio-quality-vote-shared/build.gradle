@@ -10,7 +10,7 @@ compileJava.options.encoding = 'UTF-8'
 compileTestJava.options.encoding = 'UTF-8'
  
 dependencies {
-	implementation 'javax.ws.rs:javax.ws.rs-api:2.1.1'
+	i 'javax.ws.rs:javax.ws.rs-api:2.1.1'
 }
 
 

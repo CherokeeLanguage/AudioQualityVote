@@ -79,11 +79,11 @@ dependencies {
 	compileOnly 'javax.xml.bind:jaxb-api:2.3.+'
 	
 	//ui
-	compileOnly 'com.github.gwtmaterialdesign:gwt-material:+'
-	compileOnly 'com.github.gwtmaterialdesign:gwt-material-addins:+'
-	compileOnly 'com.github.gwtmaterialdesign:gwt-material-table:+'
-	compileOnly 'com.github.gwtmaterialdesign:gwt-material-themes:+'
-	compileOnly 'com.google.elemental2:elemental2-dom:+'
+	compileOnly 'com.github.gwtmaterialdesign:gwt-material:2.4.+'
+	compileOnly 'com.github.gwtmaterialdesign:gwt-material-addins:2.4.+'
+	compileOnly 'com.github.gwtmaterialdesign:gwt-material-table:2.4.+'
+	compileOnly 'com.github.gwtmaterialdesign:gwt-material-themes:2.4.+'
+	compileOnly 'com.google.elemental2:elemental2-dom:1.1.0'
 	
 	//restapi
 	compileOnly 'javax.servlet:javax.servlet-api:3.0.1'
