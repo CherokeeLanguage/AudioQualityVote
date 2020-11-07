@@ -33,6 +33,7 @@ gwt {
 	
 	compiler {
 		src += files("../audio-quality-vote-shared/src/main/resources", "../audio-quality-vote-shared/src/main/java")
+		src += files("../audio-quality-vote-shared/src/main/resources", "../audio-quality-vote-shared/src/main/java")
 		src += files(compileJava.options.annotationProcessorGeneratedSourcesDirectory)
 		
 		disableClassMetadata = false;
@@ -44,7 +45,7 @@ gwt {
 	
 	superDev {
 		src += files("../audio-quality-vote-shared/src/main/resources", "../audio-quality-vote-shared/src/main/java")
-		//src += files(project.eclipse.jdt.apt.genSrcDir)		
+		src += files(project.eclipse.jdt.apt.genSrcDir)
 		
 		noPrecompile = true;
 		failOnError = false;
@@ -61,19 +62,20 @@ war {
 }
 
 dependencies {
-	compileOnly project(':audio-quality-vote-shared')
+	implementation project(':audio-quality-vote-shared')
+	
+	compileOnly 'org.dominokit:domino-rest-gwt:1.0-rc.4-SNAPSHOT'
+	annotationProcessor 'org.dominokit:domino-rest-apt:1.0-rc.4-SNAPSHOT'
 
 	compileOnly 'com.google.gwt:gwt-servlet:'+gwt.gwtVersion
 	compileOnly 'com.google.gwt:gwt-user:'+gwt.gwtVersion
 	
-	compileOnly 'org.dominokit:domino-rest-gwt:1.0-rc.4-SNAPSHOT'
 	
 	compileOnly ('javax.inject:javax.inject:1')
 	compileOnly ('com.google.dagger:dagger-compiler:2.+')
 	compileOnly ('com.google.dagger:dagger-gwt:2.+')
 	annotationProcessor ('com.google.dagger:dagger-compiler:2.+')
  
-	compileOnly project(':audio-quality-vote-shared')
 	compileOnly 'javax.xml.bind:jaxb-api:2.3.+'
 	
 	//ui
