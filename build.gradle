@@ -42,6 +42,9 @@ allprojects {
 		    f.append('line.separator=\\n\n')
 		}
 	}
+	configurations.all {
+	    resolutionStrategy.cacheDynamicVersionsFor 30, 'seconds'
+	}
 }
 
 dependencies {

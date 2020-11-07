@@ -15,4 +15,8 @@ public interface RestApi {
 	@Path("user/logout")
 	@GET
 	void logout(@HeaderParam("sessionid")String token);
+	
+	default void x() {
+		RestApiFactory.INSTANCE.login(null);
+	}
 }
