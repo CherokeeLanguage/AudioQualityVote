@@ -23,15 +23,12 @@ gretty {
 	jvmArgs = ['-Dfile.encoding=UTF-8', '-Xmx512M', '-Ddebug=true' ]
 	overlay ':audio-quality-vote-server'
 	overlay ':audio-quality-vote-ui'
-	extraResourceBase '../audio-quality-vote-client/build/gwt/out'
-	
-	managedClassReload=false
-	reloadOnClassChange=true
-	recompileOnSourceChange=true
+	extraResourceBase '../audio-quality-vote-ui/build/gwt/out'
+	contextPath "AudioQualityVote"
 }
 
 war {
-    archiveName "AudioQualityVote"
+    archiveName "AudioQualityVote.war"
 }
 
 eclipse {

@@ -1,6 +1,8 @@
 apply plugin: "com.diffplug.eclipse.apt"
 apply plugin: "java-library"
 apply plugin: "eclipse-wtp"
+apply plugin: "org.gretty"
+apply plugin: "war"
 
 sourceCompatibility = JavaVersion.VERSION_11
 targetCompatibility = JavaVersion.VERSION_11
@@ -11,8 +13,24 @@ compileJava {
 compileJava.options.encoding = 'UTF-8'
 compileTestJava.options.encoding = 'UTF-8'
  
+ war {
+ 	archiveName "AudioQualityVote.war"
+ }
+ 
+ gretty {
+	httpPort = 8080;
+	servletContainer = 'tomcat9'
+	jvmArgs = ['-Dfile.encoding=UTF-8', '-Xmx512M', '-Ddebug=true' ]
+}
+ 
+ 
 dependencies {
-	//implementation 'org.dominokit:domino-rest-server:1.0-rc.4-SNAPSHOT'
+	implementation 'org.glassfish.jersey.containers:jersey-container-servlet:2.32'
+	implementation 'org.glassfish.jersey.inject:jersey-hk2:2.32'
+	
+	//jdk 11 requirement
+	implementation 'org.glassfish.jaxb:jaxb-runtime:2.3.1'
+	implementation 'javax.xml.bind:jaxb-api:2.3.1'
 }
 
 eclipse {

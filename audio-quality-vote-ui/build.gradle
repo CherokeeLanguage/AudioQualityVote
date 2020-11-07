@@ -1,5 +1,6 @@
 apply plugin: "java"
 apply plugin: "war"
+apply plugin: "org.gretty"
 apply plugin: "eclipse-wtp" 
 apply plugin: "org.wisepersist.gwt"
 apply plugin: "com.diffplug.eclipse.apt"
