@@ -9,24 +9,24 @@ import javax.ws.rs.Produces;
 public interface RestApi {
 	@Path("user/login")
 	@GET
-	String login(@HeaderParam("oauth")String oauth);
+	boolean login(@HeaderParam("oauth")String oauth);
 	
 	@Path("user/logout")
 	@GET
-	void logout(@HeaderParam("sessionid")String token);
+	void logout(@HeaderParam("sessionId")String sessionId);
 	
-	@Path("audio/mp3/{id}")
-	@GET
 	@Produces("audio/mpeg")
-	Object audioGet(@HeaderParam("sessionid")String token, @PathParam("id")String id);
+	@Path("audio/file/{id}")
+	@GET
+	Object audioGet(@HeaderParam("sessionId")String sessionId, @PathParam("id")String id);
 	
 	@Path("audio/info/{id}")
 	@GET
-	String audioInfo(@HeaderParam("sessionid")String token, @PathParam("id")String id);
+	AudioInfo audioInfo(@HeaderParam("sessionId")String sessionId, @PathParam("id")String id);
 	
 	@Path("audio/vote/{id}/{vote}")
-	String audioVote(@HeaderParam("sessionid")String token, @PathParam("id")String id, @PathParam("vote")String vote);
+	String audioVote(@HeaderParam("sessionId")String sessionId, @PathParam("id")String id, @PathParam("vote")String vote);
 	
-	@Path("audio/list")
-	String audioList(@HeaderParam("sessionid")String token);
+	@Path("audio/list/{qty}")
+	AudioInfoList audioList(@HeaderParam("sessionId")String sessionId, int qty);
 }

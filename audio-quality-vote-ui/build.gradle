@@ -62,7 +62,7 @@ war {
 }
 
 dependencies {
-	compileOnly project(':audio-quality-vote-shared')
+	implementation project(':audio-quality-vote-shared')
 
 	compileOnly 'com.google.gwt:gwt-servlet:'+gwt.gwtVersion
 	compileOnly 'com.google.gwt:gwt-user:'+gwt.gwtVersion
