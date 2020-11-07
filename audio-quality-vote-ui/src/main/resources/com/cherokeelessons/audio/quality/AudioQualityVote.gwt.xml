@@ -8,6 +8,8 @@
 
 	<inherits name="com.cherokeelessons.audio.quality.shared.AudioQualityVoteShared" />
 	
+	<inherits name="org.dominokit.domino.rest.GwtRest" />
+	
 	<inherits name="dagger.Dagger" />
 	<inherits name="elemental2.dom.Dom" />
 	<inherits name="gwt.material.design.GwtMaterialDesignBasic" />
