@@ -10,8 +10,8 @@ compileJava.options.encoding = 'UTF-8'
 compileTestJava.options.encoding = 'UTF-8'
  
 dependencies {
-	implementation 'org.dominokit:domino-rest-shared:1.0-rc.4-SNAPSHOT'
-	annotationProcessor 'org.dominokit:domino-rest-apt:1.0-rc.4-SNAPSHOT'
+	compileOnly 'javax.servlet:javax.servlet-api:3.0.1'
+	compileOnly 'javax.ws.rs:javax.ws.rs-api:2.1.1'
 }
 
 

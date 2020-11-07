@@ -4,9 +4,6 @@ import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.Path;
 
-import org.dominokit.domino.rest.shared.request.service.annotations.RequestFactory;
-
-@RequestFactory
 public interface RestApi {
 	@Path("user/login")
 	@GET

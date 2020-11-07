@@ -14,8 +14,13 @@
 	<inherits name="gwt.material.design.addins.GwtMaterialAddins" />
 	<inherits name="gwt.material.design.themes.ThemeBlue" />
 	<inherits name="gwt.material.design.GwtMaterialTable" />
-	<inherits name="com.google.gwt.logging.Logging" />
+	<inherits name='com.ekotrope.gwt.CompletableFuture' />
+	
+	<inherits name="org.fusesource.restygwt.RestyGWT" />
+	<set-property name="restygwt.encodeDecode.useGwtJackson"
+		value="true" />
 
+	<inherits name="com.google.gwt.logging.Logging" />
 	<set-property name="gwt.logging.logLevel" value="INFO" />
 	<set-property name="gwt.logging.enabled" value="TRUE" />
 	<set-property name="gwt.logging.consoleHandler"

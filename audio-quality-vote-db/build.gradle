@@ -11,12 +11,6 @@ compileJava {
 compileJava.options.encoding = 'UTF-8'
 compileTestJava.options.encoding = 'UTF-8'
  
-repositories {
-		jcenter()
-    mavenCentral()
-		maven { url 'https://jitpack.io' }
-}
-
 dependencies {
 	implementation group: 'org.jdbi', name: 'jdbi3-core', version: '3.17.0'
 	implementation group: 'org.jdbi', name: 'jdbi3-sqlobject', version: '3.17.0'

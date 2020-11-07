@@ -44,7 +44,7 @@ gwt {
 	
 	superDev {
 		src += files("../audio-quality-vote-shared/src/main/resources", "../audio-quality-vote-shared/src/main/java")
-		//src += files(project.eclipse.jdt.apt.genSrcDir)		
+		src += files(project.eclipse.jdt.apt.genSrcDir)
 		
 		noPrecompile = true;
 		failOnError = false;
@@ -66,22 +66,31 @@ dependencies {
 	compileOnly 'com.google.gwt:gwt-servlet:'+gwt.gwtVersion
 	compileOnly 'com.google.gwt:gwt-user:'+gwt.gwtVersion
 	
-	compileOnly 'org.dominokit:domino-rest-gwt:1.0-rc.4-SNAPSHOT'
+	//compileOnly 'org.dominokit:domino-rest-gwt:1.0-rc.4-SNAPSHOT'
 	
 	compileOnly ('javax.inject:javax.inject:1')
 	compileOnly ('com.google.dagger:dagger-compiler:2.+')
 	compileOnly ('com.google.dagger:dagger-gwt:2.+')
 	annotationProcessor ('com.google.dagger:dagger-compiler:2.+')
+	
+	compileOnly 'com.ekotrope:gwt-completablefuture:1.0.0'
+	
+	compileOnly 'org.fusesource.restygwt:restygwt:2.2.7'
+	compileOnly "com.fasterxml.jackson.core:jackson-annotations:2.11.3"
+	compileOnly "com.fasterxml.jackson.core:jackson-databind:2.11.3"
+	compileOnly 'com.google.code.findbugs:jsr305:3.0.0' //required for restygwt compile
+	compileOnly 'com.github.nmorel.gwtjackson:gwt-jackson:0.15.4'
+	compileOnly 'javax.xml.bind:jaxb-api:2.3.+'
  
 	compileOnly project(':audio-quality-vote-shared')
 	compileOnly 'javax.xml.bind:jaxb-api:2.3.+'
 	
 	//ui
-	compileOnly 'com.github.gwtmaterialdesign:gwt-material:+'
-	compileOnly 'com.github.gwtmaterialdesign:gwt-material-addins:+'
-	compileOnly 'com.github.gwtmaterialdesign:gwt-material-table:+'
-	compileOnly 'com.github.gwtmaterialdesign:gwt-material-themes:+'
-	compileOnly 'com.google.elemental2:elemental2-dom:+'
+	compileOnly 'com.github.gwtmaterialdesign:gwt-material:2.4.+'
+	compileOnly 'com.github.gwtmaterialdesign:gwt-material-addins:2.4.+'
+	compileOnly 'com.github.gwtmaterialdesign:gwt-material-table:2.4.+'
+	compileOnly 'com.github.gwtmaterialdesign:gwt-material-themes:2.4.+'
+	compileOnly 'com.google.elemental2:elemental2-dom:1.1.+'
 	
 	//restapi
 	compileOnly 'javax.servlet:javax.servlet-api:3.0.1'
