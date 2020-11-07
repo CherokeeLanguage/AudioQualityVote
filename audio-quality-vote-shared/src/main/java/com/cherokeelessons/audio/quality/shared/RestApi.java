@@ -1,7 +1,9 @@
 package com.cherokeelessons.audio.quality.shared;
 
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -25,8 +27,10 @@ public interface RestApi {
 	AudioInfo audioInfo(@HeaderParam("sessionId")String sessionId, @PathParam("id")String id);
 	
 	@Path("audio/vote/{id}/{vote}")
-	String audioVote(@HeaderParam("sessionId")String sessionId, @PathParam("id")String id, @PathParam("vote")String vote);
+	@POST
+	AudioInfo audioVote(@HeaderParam("sessionId")String sessionId, @PathParam("id")String id, @PathParam("vote")Integer vote);
 	
 	@Path("audio/list/{qty}")
-	AudioInfoList audioList(@HeaderParam("sessionId")String sessionId, int qty);
+	@GET
+	AudioInfoList audioList(@HeaderParam("sessionId")String sessionId, Integer qty);
 }
