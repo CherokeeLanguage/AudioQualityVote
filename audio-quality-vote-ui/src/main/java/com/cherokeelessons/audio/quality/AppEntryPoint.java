@@ -20,15 +20,16 @@ public class AppEntryPoint implements EntryPoint {
 
 	@Override
 	public void onModuleLoad() {
+		AuthRequest req =
+				new AuthRequest("https", "accounts.google.com", "o/oauth2/auth", "253590407731-1c84s03nf6qr9lfh7r8p0a4r6fo3tp4o.apps.googleusercontent.com")
+				.setParameter("scope", "email profile openid");
+				//.setParameter("redirect_uri", GWT.getHostPageBaseURL());
+		
 		final AppComponents appComponents = DaggerAppComponents.create();
 		final AppPresenter appPresenter = appComponents.provideAppPresenter();
 //		appPresenter.init();
 		GWT.log(GWT.getHostPageBaseURL());
 		Button button = new Button("Google", (ClickHandler) event -> {
-		      AuthRequest req =
-		          new AuthRequest("https", "accounts.google.com", "o/oauth2/auth", "253590407731-1c84s03nf6qr9lfh7r8p0a4r6fo3tp4o.apps.googleusercontent.com")
-		              .setParameter("scope", "email profile openid"); //
-		              //.setParameter("redirect_uri", GWT.getHostPageBaseURL());
 		      Auth.get().login(req, new Callback<Map<String, String>, Throwable>() {
 		        @Override
 		        public void onFailure(Throwable reason) {
