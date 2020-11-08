@@ -15,11 +15,11 @@ compileJava.options.encoding = 'UTF-8'
 compileTestJava.options.encoding = 'UTF-8'
 
 tasks.withType(org.wisepersist.gradle.plugins.gwt.GwtCompile) {
-	args "-optimize", "0", "-noincremental"
+	args "-optimize", "0", "-noincremental", "-generateJsInteropExports"
 }
  
 tasks.withType(org.wisepersist.gradle.plugins.gwt.GwtSuperDev) {
-	args "-style", "PRETTY", "-strict"
+	args "-style", "PRETTY", "-strict", "-generateJsInteropExports"
 	jvmArgs "-Dgwt.watchFileChanges=false"
 }
 
@@ -67,7 +67,7 @@ dependencies {
 	compileOnly 'com.google.gwt:gwt-servlet:'+gwt.gwtVersion
 	compileOnly 'com.google.gwt:gwt-user:'+gwt.gwtVersion
 	
-	//compileOnly 'org.dominokit:domino-rest-gwt:1.0-rc.4-SNAPSHOT'
+	compileOnly "io.github.freddyboucher:gwt-oauth2:1.1"
 	
 	compileOnly ('javax.inject:javax.inject:1')
 	compileOnly ('com.google.dagger:dagger-compiler:2.+')

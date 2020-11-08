@@ -7,7 +7,9 @@
 		class="com.cherokeelessons.audio.quality.AppEntryPoint" />
 
 	<inherits name="com.cherokeelessons.audio.quality.shared.AudioQualityVoteShared" />
-	
+
+	<inherits name="io.github.freddyboucher.gwt.oauth2.OAuth2"/>
+		
 	<inherits name="dagger.Dagger" />
 	<inherits name="elemental2.dom.Dom" />
 	<inherits name="gwt.material.design.GwtMaterialDesignBasic" />
