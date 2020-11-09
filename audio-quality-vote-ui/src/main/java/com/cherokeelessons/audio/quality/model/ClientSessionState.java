@@ -5,6 +5,7 @@ import java.util.Map;
 public class ClientSessionState {
 	private static final String SESSIONID_ID = "sessionId";
 	private static final String OAUTH = "oauth";
+	private static final String EMAIL = "email";
 	
 	public ClientSessionState(Map<String, String> map) {
 		this.map=map;
@@ -49,5 +50,17 @@ public class ClientSessionState {
  
 	public void clear() {
 		this.map.clear();
+	}
+
+	public void email(String email) {
+		if (email==null) {
+			clearEmail();
+			return;
+		}
+		map.put(EMAIL, email);
+	}
+
+	private void clearEmail() {
+		map.remove(EMAIL);
 	}
 }

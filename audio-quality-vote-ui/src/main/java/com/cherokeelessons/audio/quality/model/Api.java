@@ -7,6 +7,7 @@ import javax.inject.Inject;
 import org.fusesource.restygwt.client.REST;
 
 import com.cherokeelessons.audio.quality.presenter.RunAsync;
+import com.cherokeelessons.audio.quality.shared.UserInfo;
 
 public class Api {
 	@Inject
@@ -23,13 +24,13 @@ public class Api {
 		//
 	}
 	
-	public CompletableFuture<Boolean> login() {
-		CallbackFuture<Boolean> cf = new CallbackFuture<>();
-		if (state.oauth()==null) {
-			runasync.run(()->cf.future().complete(false));
+	public CompletableFuture<UserInfo> login(String idToken) {
+		CallbackFuture<UserInfo> cf = new CallbackFuture<>();
+		if (idToken==null) {
+			runasync.run(()->cf.future().complete(null));
 			return cf.future();
 		}
-		call(cf).login(state.oauth());
+		call(cf).login(idToken);
 		return cf.future();
 	}
 

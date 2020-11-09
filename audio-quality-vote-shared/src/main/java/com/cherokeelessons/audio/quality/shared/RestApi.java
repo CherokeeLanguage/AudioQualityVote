@@ -1,6 +1,5 @@
 package com.cherokeelessons.audio.quality.shared;
 
-import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
@@ -10,8 +9,8 @@ import javax.ws.rs.Produces;
 
 public interface RestApi {
 	@Path("user/login")
-	@GET
-	boolean login(@HeaderParam("oauth")String oauth);
+	@POST
+	UserInfo login(@HeaderParam("id-token")String idToken);
 	
 	@Path("user/logout")
 	@GET

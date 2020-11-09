@@ -25,8 +25,14 @@ compileTestJava.options.encoding = 'UTF-8'
  
  
 dependencies {
+	implementation project(":audio-quality-vote-shared")
+	
+	implementation 'com.google.api-client:google-api-client:+'
+
 	implementation 'org.glassfish.jersey.containers:jersey-container-servlet:2.32'
+	implementation 'org.glassfish.jersey.media:jersey-media-json-jackson:2.32'
 	implementation 'org.glassfish.jersey.inject:jersey-hk2:2.32'
+	implementation 'com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:2.11.+'
 	
 	//jdk 11 requirement
 	implementation 'org.glassfish.jaxb:jaxb-runtime:2.3.1'

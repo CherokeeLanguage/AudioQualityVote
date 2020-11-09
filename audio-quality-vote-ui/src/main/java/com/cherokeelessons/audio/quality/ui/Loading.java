@@ -4,9 +4,9 @@ import javax.inject.Inject;
 
 import gwt.material.design.client.ui.MaterialLoader;
 
-public class LoadingView {
+public class Loading {
 	@Inject
-	public LoadingView() {
+	public Loading() {
 	}
  
 	public void loading(boolean visible) {

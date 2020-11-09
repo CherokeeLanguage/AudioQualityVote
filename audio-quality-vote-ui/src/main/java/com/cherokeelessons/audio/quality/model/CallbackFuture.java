@@ -5,6 +5,8 @@ import java.util.concurrent.CompletableFuture;
 import org.fusesource.restygwt.client.Method;
 import org.fusesource.restygwt.client.MethodCallback;
 
+import elemental2.dom.DomGlobal;
+
 public class CallbackFuture<T> {
 	private final CompletableFuture<T> future;
 	private final MethodCallback<T> callback;
@@ -14,6 +16,7 @@ public class CallbackFuture<T> {
 		callback = new MethodCallback<T>() {
 			@Override
 			public void onFailure(Method method, Throwable exception) {
+				DomGlobal.console.log("EXCEPTION: "+exception.getMessage());
 				if (method != null && method.getResponse() != null) {
 					Exception e = new Exception(method.getResponse().getText(), exception);
 					future.completeExceptionally(e);

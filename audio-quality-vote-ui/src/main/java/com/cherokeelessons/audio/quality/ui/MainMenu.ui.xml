@@ -1,0 +1,27 @@
+<!DOCTYPE ui:UiBinder SYSTEM "http://dl.google.com/gwt/DTD/xhtml.ent">
+<ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
+	xmlns:g="urn:import:com.google.gwt.user.client.ui"
+	xmlns:m="urn:import:gwt.material.design.client.ui">
+	<ui:style>
+	
+	</ui:style>
+	<m:MaterialPanel>
+		<m:MaterialNavBar activates="sn_main">
+			<m:MaterialNavBrand float="RIGHT"
+				text="Audio Quality Vote" />
+		</m:MaterialNavBar>
+		<m:MaterialSideNav ui:field="sidenav" m:id="sn_main"
+			width="275" closeOnClick="false" allowBodyScroll="true"
+			alwaysShowActivator="true" showOnAttach="true">
+			<m:MaterialLink ui:field="lnkReview"
+				iconType="CLOUD_DOWNLOAD" iconPosition="LEFT" text="DOWNLOAD VOTES" />
+			<m:MaterialLink ui:field="lnkVote"
+				iconType="FORMAT_LIST_BULLETED" iconPosition="LEFT" text="VOTE" />
+			<m:MaterialLink ui:field="lnkAbout"
+				iconType="INFO" iconPosition="LEFT" text="ABOUT" />
+			<m:MaterialLink ui:field="lnkLogout"
+				iconType="EXIT_TO_APP" iconPosition="LEFT" text="LOGOUT" />
+		</m:MaterialSideNav>
+		<m:MaterialContainer ui:field="container"></m:MaterialContainer>
+	</m:MaterialPanel>
+</ui:UiBinder> 
