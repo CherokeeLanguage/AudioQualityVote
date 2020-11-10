@@ -26,6 +26,7 @@ compileTestJava.options.encoding = 'UTF-8'
  
 dependencies {
 	implementation project(":audio-quality-vote-shared")
+	implementation project(":audio-quality-vote-db")
 	
 	implementation 'com.google.api-client:google-api-client:+'
 

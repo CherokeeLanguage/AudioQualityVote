@@ -12,9 +12,9 @@ compileJava.options.encoding = 'UTF-8'
 compileTestJava.options.encoding = 'UTF-8'
  
 dependencies {
-	implementation group: 'org.jdbi', name: 'jdbi3-core', version: '3.17.0'
-	implementation group: 'org.jdbi', name: 'jdbi3-sqlobject', version: '3.17.0'
-	implementation group: 'com.h2database', name: 'h2', version: '1.4.200'
+	implementation "org.jdbi:jdbi3-core:3.17.0"
+	implementation "org.jdbi:jdbi3-sqlobject:3.17.0"
+	implementation 'org.mariadb.jdbc:mariadb-java-client:2.7.0'
 }
 
 eclipse {
@@ -23,6 +23,7 @@ eclipse {
 	}
 	classpath {
 		downloadSources=true
+		downloadJavadoc=true
 	}
 }
 

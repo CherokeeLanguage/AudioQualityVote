@@ -1,11 +1,19 @@
 package com.cherokeelessons.audio.quality.servlet;
 
+import java.io.File;
 import java.io.IOException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.security.GeneralSecurityException;
 import java.util.Arrays;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.Path;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
 
+import com.cherokeelessons.audio.quality.db.AudioQualityVoteDao;
 import com.cherokeelessons.audio.quality.shared.AudioInfo;
 import com.cherokeelessons.audio.quality.shared.AudioInfoList;
 import com.cherokeelessons.audio.quality.shared.Consts;
@@ -13,15 +21,24 @@ import com.cherokeelessons.audio.quality.shared.RestApi;
 import com.cherokeelessons.audio.quality.shared.UserInfo;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
-
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
 
 @Path("/")
 public class RestApiImpl implements RestApi {
 
+	@Context
+	protected HttpServletRequest request;
+	
+	@Context
+	protected HttpServletResponse response;
+	
+	@Context
+	protected HttpHeaders headers;
+	
 	@Override
 	public UserInfo login(String idToken) {
+		AudioQualityVoteDao.onDemand();
 		GoogleIdTokenVerifier verifier =
 			    new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new JacksonFactory())
 	            .setAudience(Arrays.asList(Consts.CLIENT_ID))
@@ -36,6 +53,7 @@ public class RestApiImpl implements RestApi {
 		if (token==null) {
 			return null;
 		}
+		
 		UserInfo info = new UserInfo();
 		info.setEmail(token.getPayload().getEmail());
 		info.setId(token.getPayload().getSubject());
