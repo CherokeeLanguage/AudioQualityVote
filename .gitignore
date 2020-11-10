@@ -21,3 +21,4 @@ gradle-app.setting
 *.swp
 war/
 bin/
+AudioQualityVote-db.properties
