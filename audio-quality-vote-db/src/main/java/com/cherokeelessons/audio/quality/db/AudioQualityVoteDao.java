@@ -52,45 +52,39 @@ public interface AudioQualityVoteDao {
 	//
 	@SqlScript("create table if not exists aqv_votes" //
 			+ " (vid serial," //
-			+ " uid bigint unsigned,"
-			+ " aid bigint unsigned," //
-			+ " up int default 0,"
-			+ " neutral int default 0,"
-			+ " down int default 0,"
+			+ " uid bigint unsigned," + " aid bigint unsigned," //
+			+ " up int default 0," + " neutral int default 0," + " down int default 0,"
 			+ " modified datetime on update NOW()," //
 			+ " created datetime default NOW())") //
 	@SqlScript("create index if not exists file on aqv_votes(file(8))")
 	@SqlScript("create index if not exists modified on aqv_votes(modified)")
 	@SqlScript("create index if not exists created on aqv_votes(created)")
 	void init();
-}
 
-class State {
-	protected static AudioQualityVoteDao dao;
-	protected static String jdbcUrl;
-	protected static Properties jdbcProperties;
-	protected static String user;
-	protected static String password;
+	class State {
+		protected static AudioQualityVoteDao dao;
+		protected static String jdbcUrl;
+		protected static Properties properties;
+		protected static String user;
+		protected static String password;
 
-	protected static void loadPropertiesFile() {
-		if (State.jdbcProperties != null) {
-			return;
+		protected static void loadPropertiesFile() {
+			if (properties != null) {
+				return;
+			}
+			properties = new Properties();
+			File file = new File(Consts.DEFAULT_PROPERTIES_FILE);
+			if (!file.exists()) {
+				file = new File(Consts.ALT_PROPERTIES_FILE);
+			}
+			try (FileInputStream in = new FileInputStream(file.getAbsoluteFile())) {
+				properties.load(in);
+			} catch (IOException e) {
+				throw new IllegalStateException("Can't read " + file.getAbsolutePath(), e);
+			}
+			jdbcUrl = properties.getProperty("jdbc.url");
+			user = properties.getProperty("jdbc.username");
+			password = properties.getProperty("jdbc.password");
 		}
-		Properties props = new Properties();
-		File file = new File("/home/AudioQualityVote/db.properties");
-		System.out.println(file.getAbsolutePath());
-		if (!file.exists()) {
-			file = new File("../AudioQualityVote-db.properties");
-			System.out.println(file.getAbsolutePath());
-		}
-		try (FileInputStream in = new FileInputStream(file.getAbsoluteFile())) {
-			props.load(in);
-		} catch (IOException e) {
-			throw new IllegalStateException(e);
-		}
-		State.jdbcProperties = props;
-		State.jdbcUrl = State.jdbcProperties.getProperty("jdbc.url");
-		State.user = State.jdbcProperties.getProperty("jdbc.username");
-		State.password = State.jdbcProperties.getProperty("jdbc.password");
 	}
 }
