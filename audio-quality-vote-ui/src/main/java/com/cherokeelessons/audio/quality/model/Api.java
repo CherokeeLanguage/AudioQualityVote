@@ -66,12 +66,20 @@ public class Api {
 	
 	public CompletableFuture<AudioDataList> pendingAudio() {
 		CallbackFuture<AudioDataList> cf = new CallbackFuture<AudioDataList>();
-		call(cf).audioList(state.uid(), state.sessionId(), 5);
+		call(cf).audioListUndecided(state.uid(), state.sessionId(), 5);
 		return cf.future();
 	}
 
 	private <T> RestApi call(CallbackFuture<T> cf) {
 		return REST.withCallback(cf.callback()).call(rest);
+	}
+
+	public CompletableFuture<Void> logout() {
+		CallbackFuture<Void> cf = new CallbackFuture<>();
+		call(cf).logout(state.uid(), state.sessionId());
+		return cf.future().exceptionally((e)->{
+			return null;
+		});
 	}
 	
 }

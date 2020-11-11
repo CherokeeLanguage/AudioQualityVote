@@ -22,6 +22,8 @@ import org.jdbi.v3.sqlobject.transaction.Transaction;
 import org.mariadb.jdbc.MariaDbPoolDataSource;
 
 import com.cherokeelessons.audio.quality.shared.AudioData;
+import com.cherokeelessons.audio.quality.shared.AudioDataList;
+import com.cherokeelessons.audio.quality.shared.VoteResult;
 
 public interface AudioQualityVoteDao {
 
@@ -37,7 +39,7 @@ public interface AudioQualityVoteDao {
 			pool.setUser(State.user);
 			pool.setPassword(State.password);
 			pool.setMaxIdleTime(60);
-			pool.setMaxPoolSize(4);
+			pool.setMaxPoolSize(256);
 			pool.setMinPoolSize(1);
 		} catch (SQLException e) {
 			pool.close();
@@ -97,11 +99,11 @@ public interface AudioQualityVoteDao {
 	
 	@SqlQuery("select vid from aqv_votes where "
 			+ " uid=:uid AND good=0 AND poor=0 AND bad=0")
-	List<Integer> undecided(@Bind("uid")long uid);
+	List<Integer> undecidedIds(@Bind("uid")long uid);
 	
 	@Transaction
-	default List<Integer> pending(long uid) {
-		List<Integer> undecided = undecided(uid);
+	default List<Integer> pendingIds(long uid) {
+		List<Integer> undecided = undecidedIds(uid);
 		if (undecided.isEmpty()) {
 			File parentFolder = AudioQualityVoteFiles.getFolder().getAbsoluteFile();
 			List<AudioData> files = AudioQualityVoteFiles.getAudioData();
@@ -109,7 +111,7 @@ public interface AudioQualityVoteDao {
 				String relative = f.getAudioFile().substring(parentFolder.getPath().length());
 				addPendingFile(uid, relative, f.getText());
 			});
-			return undecided(uid);
+			return undecidedIds(uid);
 		}
 		return undecided;
 	}
@@ -201,4 +203,26 @@ public interface AudioQualityVoteDao {
 			+ " set bad=:bad, poor=:poor, good=:good"
 			+ " where vid=:vid and uid=:uid")
 	void setVote(@Bind("uid")Long uid, @Bind("vid")Long vid, @Bind("bad")Integer bad, @Bind("poor")Integer poor, @Bind("good")Integer good);
+
+	@SqlQuery("select vid from aqv_votes where uid=:uid order by file")
+	List<Integer> audioDataIdsFor(@Bind("uid")Long uid);
+	
+	@SqlQuery("select file," //
+			+ " sum(bad) bad, sum(poor) poor, sum(good) good," //
+			+ " avg(good) - (avg(bad)+avg(poor)) ranking," //
+			+ " count(*) votes" //
+			+ " from aqv_votes" //
+			+ " where bad>0 OR poor>0 or good>0" //
+			+ " group by file order by file")
+	@RegisterBeanMapper(VoteResult.class)
+	List<VoteResult> audioVoteResults();
+
+	@SqlUpdate("delete from aqv_votes where vid=:vid AND uid=:uid")
+	void removeVoteEntry(@Bind("uid")Long uid, @Bind("vid")Integer vid);
+
+	@SqlQuery("select count(*) from aqv_sessions where uid=:uid")
+	int sessionCount(@Bind("uid")Long uid);
+	
+	@SqlUpdate("delete from aqv_sessions where uid=:uid order by last_seen limit :limit")
+	void deleteOldestSessions(@Bind("uid")Long uid, @Bind("limit")int limit);
 }

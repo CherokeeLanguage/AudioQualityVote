@@ -11,9 +11,9 @@
 				text="Audio Quality Vote" />
 		</m:MaterialNavBar>
 		<m:MaterialSideNav ui:field="sidenav" m:id="sn_main"
-			width="275" closeOnClick="false" allowBodyScroll="true"
+			width="275" closeOnClick="true" allowBodyScroll="true"
 			alwaysShowActivator="true" showOnAttach="true">
-			<m:MaterialLink ui:field="lnkReview"
+			<m:MaterialLink ui:field="lnkDownload"
 				iconType="CLOUD_DOWNLOAD" iconPosition="LEFT" text="DOWNLOAD VOTES" />
 			<m:MaterialLink ui:field="lnkVote"
 				iconType="FORMAT_LIST_BULLETED" iconPosition="LEFT" text="VOTE" />

@@ -43,9 +43,9 @@ public class MainMenu extends Composite implements UiView {
 	}
 	
 	@UiField
-	protected MaterialLink lnkReview;
-	public HandlerRegistration lnkReview(Handler<Void> handler) {
-		return lnkReview.addClickHandler((e)->handler.handle(null));
+	protected MaterialLink lnkDownload;
+	public HandlerRegistration lnkDownload(Handler<Void> handler) {
+		return lnkDownload.addClickHandler((e)->handler.handle(null));
 	}
 
 	@UiField
@@ -73,7 +73,7 @@ public class MainMenu extends Composite implements UiView {
 	}
 	
 	private Handler<List<AudioData>> voteHandler=(d)->{};
-	public HandlerRegistration voteSubmitted(Handler<List<AudioData>> handler) {
+	public HandlerRegistration votesSubmitted(Handler<List<AudioData>> handler) {
 		if (handler==null) {
 			voteHandler=(d)->{};
 		} else {
@@ -145,6 +145,13 @@ public class MainMenu extends Composite implements UiView {
 			row.add(c);
 			
 			c = new MaterialColumn();
+			MaterialRadioButton btnNoVote = new MaterialRadioButton(radioButtonGroup);
+			btnNoVote.setText("No Vote");
+			btnNoVote.setValue(true);
+			c.add(btnNoVote);
+			row.add(c);
+			
+			c = new MaterialColumn();
 			
 			groups.add(group);
 			container.add(row);
@@ -178,5 +185,10 @@ public class MainMenu extends Composite implements UiView {
 		c.add(submit);
 		row.add(c);
 		container.add(row);
+	}
+
+	public void showAbout() {
+		container.clear();
+		container.add(new AboutDisplay());
 	}
 }

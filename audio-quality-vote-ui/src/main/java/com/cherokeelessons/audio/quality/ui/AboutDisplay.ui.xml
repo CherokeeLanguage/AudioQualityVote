@@ -1,0 +1,87 @@
+<!DOCTYPE ui:UiBinder SYSTEM "http://dl.google.com/gwt/DTD/xhtml.ent">
+<ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
+	xmlns:g="urn:import:com.google.gwt.user.client.ui"
+	xmlns:m="urn:import:gwt.material.design.client.ui"
+	xmlns:h="urn:import:gwt.material.design.client.ui.html">
+	<ui:style>
+	
+	</ui:style>
+	<m:MaterialPanel>
+		<m:MaterialRow>
+			<m:MaterialColumn>
+				<h:Heading size="H4">About</h:Heading>
+			</m:MaterialColumn>
+		</m:MaterialRow>
+		<m:MaterialRow>
+			<m:MaterialColumn>
+				<h:Div>
+					<h:Text
+						text="This app exists to permite crowd sourced voting on the output from the Cherokee-TTS project." />
+				</h:Div>
+				<h:Div>
+					<h:Text
+						text="This goal of the Cherokee-TTS project is to generate massive amounts of correctly pronounced audio learning materials." />
+				</h:Div>
+				<h:Div>
+					<h:Text
+						text="After enough votes are collected, a new training run will be initiated, with new results posted here." />
+				</h:Div>
+			</m:MaterialColumn>
+		</m:MaterialRow>
+		<m:MaterialRow>
+			<m:MaterialColumn>
+				<h:Heading size="H4">Instructions</h:Heading>
+			</m:MaterialColumn>
+		</m:MaterialRow>
+		<m:MaterialRow>
+			<m:MaterialColumn>
+				<h:Div>
+					<h:Text text="Select 'VOTE' on the main menu." />
+				</h:Div>
+				<h:Div>
+					<h:Text text="Listen carefully to each audio track." />
+				</h:Div>
+				<h:Div>
+					<h:UnorderedList>
+						<h:ListItem>
+							<h:Text
+								text="If you hear any type of defect such as noise, sudden fade in volume, etc, you should mark the track as 'Bad'." />
+						</h:ListItem>
+						<h:ListItem>
+							<h:Text
+								text="If the pronunciation does not match the supplied text, you should mark the track as 'Bad'." />
+						</h:ListItem>
+						<h:ListItem>
+							<h:Text
+								text="If you hear vowels not in the text, or don't hear vowels which are in the text, you should mark the track as 'Bad'." />
+						</h:ListItem>
+						<h:ListItem>
+							<h:Text
+								text="Any type of mis-pronunciation should be marked as 'Bad'." />
+						</h:ListItem>
+						<h:ListItem>
+							<h:Text
+								text="If the pronunciation matches the supplied text, but if any part the audio is 'iffy', you should mark the track as 'Poor'." />
+						</h:ListItem>
+						<h:ListItem>
+							<h:Text
+								text="If the pronunciation matches the supplied text, and the audio is clear, you should mark the track as 'Good'." />
+						</h:ListItem>
+						<h:ListItem>
+							<h:Text
+								text="If you are unsure about what vote to use, you should mark 'No Vote'." />
+						</h:ListItem>
+					</h:UnorderedList>
+				</h:Div>
+				<h:Div>
+					<h:Text
+						text="When satisfied with your results, hit 'SUBMIT', your votes will be recorded, then a new set of audio tracks will be displayed." />
+				</h:Div>
+				<h:Div>
+					<h:Text
+						text="If you hit 'CANCEL' your votes will be discarded. Hit 'VOTE' when you are ready for the next set of audio tracks." />
+				</h:Div>
+			</m:MaterialColumn>
+		</m:MaterialRow>
+	</m:MaterialPanel>
+</ui:UiBinder> 

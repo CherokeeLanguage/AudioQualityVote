@@ -28,6 +28,8 @@ dependencies {
 	implementation project(":audio-quality-vote-shared")
 	implementation project(":audio-quality-vote-db")
 	
+	implementation 'com.opencsv:opencsv:+'
+	
 	implementation 'com.google.api-client:google-api-client:+'
 
 	implementation 'org.glassfish.jersey.containers:jersey-container-servlet:2.32'

@@ -3,6 +3,7 @@ package com.cherokeelessons.audio.quality.servlet;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.security.GeneralSecurityException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -24,51 +25,51 @@ import com.cherokeelessons.audio.quality.shared.AudioDataList;
 import com.cherokeelessons.audio.quality.shared.Consts;
 import com.cherokeelessons.audio.quality.shared.RestApi;
 import com.cherokeelessons.audio.quality.shared.UserInfo;
+import com.cherokeelessons.audio.quality.shared.VoteResult;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
+import com.opencsv.CSVWriter;
 
 @Path("/")
 public class RestApiImpl implements RestApi {
-	
+
 	@Context
 	protected HttpSession session;
 
 	@Context
 	protected HttpServletRequest request;
-	
+
 	protected HttpServletResponse response;
-	
+
 	@Context
 	protected void setResponse(HttpServletResponse response) {
-		this.response=response;
+		this.response = response;
 		response.addHeader("Cache-Control", "no-store");
 	}
-	
+
 	@Context
 	protected HttpHeaders headers;
 
 	private AudioQualityVoteDao dao() {
 		return AudioQualityVoteDao.onDemand();
 	}
-	
+
 	public RestApiImpl() {
 	}
+
 	@Override
 	public UserInfo login(String idToken) {
-		GoogleIdTokenVerifier verifier =
-			    new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new JacksonFactory())
-	            .setAudience(Arrays.asList(Consts.CLIENT_ID))
-	            .setIssuer("accounts.google.com")
-	            .build();
+		GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new JacksonFactory())
+				.setAudience(Arrays.asList(Consts.CLIENT_ID)).setIssuer("accounts.google.com").build();
 		GoogleIdToken token;
 		try {
 			token = verifier.verify(idToken);
 		} catch (GeneralSecurityException | IOException e) {
 			return null;
 		}
-		if (token==null) {
+		if (token == null) {
 			return null;
 		}
 		String oauthId = token.getPayload().getSubject();
@@ -80,6 +81,10 @@ public class RestApiImpl implements RestApi {
 		info.setUid(uid);
 		info.setEmail(email);
 		info.setSessionId(dao().newSessionId(uid));
+		int sessionCount = dao().sessionCount(uid);
+		if (sessionCount > 5) {
+			dao().deleteOldestSessions(uid, sessionCount - 5);
+		}
 		return info;
 	}
 
@@ -100,18 +105,18 @@ public class RestApiImpl implements RestApi {
 			return Response.status(Status.NOT_FOUND).build();
 		}
 		AudioData data = dao().audioData(vid);
-		if (data==null) {
-			System.err.println("No entry in db for vid "+vid);
+		if (data == null) {
+			System.err.println("No entry in db for vid " + vid);
 			return Response.status(Status.NOT_FOUND).build();
 		}
 		File file = new File(AudioQualityVoteFiles.getFolder(), data.getAudioFile());
 		if (!file.exists()) {
-			System.err.println("No file found for vid "+vid);
+			System.err.println("No file found for vid " + vid);
 			System.out.println(file.getAbsolutePath());
 			return Response.status(Status.NOT_FOUND).build();
 		}
 		try {
-			response.setHeader("Cache-Control", "public,max-age="+(60*60*24));
+			response.setHeader("Cache-Control", "public,max-age=" + (60 * 60 * 24));
 			return Response.ok(new FileInputStream(file)).build();
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -120,37 +125,48 @@ public class RestApiImpl implements RestApi {
 	}
 
 	@Override
-	public AudioData audioInfo(Long uid, String sessionId, String id) {
-		// TODO Auto-generated method stub
-		return null;
+	public AudioData audioData(Long uid, String sessionId, Long vid) {
+		if (!isSessionId(uid, sessionId) || vid == null) {
+			return null;
+		}
+		return dao().audioData(vid);
 	}
 
 	@Override
-	public AudioDataList audioList(Long uid, String sessionId, Integer qty) {
+	public AudioDataList audioListUndecided(Long uid, String sessionId, Integer qty) {
 		if (!isSessionId(uid, sessionId)) {
 			return null;
 		}
-		if (qty==null || qty<1) {
-			qty=16;
-		}
-		List<Integer> pending = dao().pending(uid);
-		Collections.shuffle(pending);
-		if (pending.size()>qty) {
-			pending = pending.subList(0, qty);
+		if (qty == null || qty < 1) {
+			qty = 16;
 		}
 		AudioDataList list = new AudioDataList();
-		if (pending.isEmpty()) {
-			return list;
-		}
-		for (Integer vid: pending) {
-			list.getList().add(dao().audioData(vid));
-		}
+		do {
+			list.getList().clear();
+			List<Integer> pending = dao().pendingIds(uid);
+			if (pending.isEmpty()) {
+				return list;
+			}
+			Collections.shuffle(pending);
+			if (pending.size() > qty) {
+				pending = pending.subList(0, qty);
+			}
+			for (Integer vid : pending) {
+				AudioData audioData = dao().audioData(vid);
+				File file = new File(AudioQualityVoteFiles.getFolder(), audioData.getAudioFile());
+				if (file.exists()) {
+					list.getList().add(audioData);
+				} else {
+					dao().removeVoteEntry(uid, vid);
+				}
+			}
+		} while (list.getList().isEmpty());
 		return list;
 	}
-	
+
 	@Override
 	public Boolean isSessionId(Long uid, String sessionId) {
-		if (uid==null || sessionId==null) {
+		if (uid == null || sessionId == null) {
 			return false;
 		}
 		return dao().isSessionId(uid, sessionId);
@@ -163,5 +179,57 @@ public class RestApiImpl implements RestApi {
 		}
 		dao().setVote(uid, vid, bad, poor, good);
 		return dao().audioData(vid);
+	}
+
+	@Override
+	public AudioDataList audioListBrowse(Long uid, String sessionId, Integer size, Integer page) {
+		if (!isSessionId(uid, sessionId) || page == null || size == null) {
+			return null;
+		}
+		List<Integer> vids = dao().audioDataIdsFor(uid);
+		AudioDataList list = new AudioDataList();
+		for (Integer vid : vids) {
+			list.getList().add(dao().audioData(vid));
+		}
+		return list;
+	}
+
+	@Override
+	public AudioDataList audioListVotes(Long uid, String sessionId, Integer size, Integer page) {
+		if (!isSessionId(uid, sessionId) || page == null || size == null) {
+			return null;
+		}
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public AudioDataList audioListCount(Long uid, String sessionId) {
+		if (!isSessionId(uid, sessionId)) {
+			return null;
+		}
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Response audioQualityVotesCsv() {
+		List<VoteResult> voteResults = dao().audioVoteResults();
+		String[] header = { "File", "Bad", "Poor", "Good", "Ranking", "Votes" };
+		try (StringWriter writer = new StringWriter(); CSVWriter csv = new CSVWriter(writer)) {
+			csv.writeNext(header);
+			for (VoteResult result : voteResults) {
+				String[] row = { result.getFile(), //
+						result.getBad() + "", result.getPoor() + "", result.getGood() + "", //
+						result.getRanking() + "", result.getVotes() + "" };
+				csv.writeNext(row);
+			}
+			csv.flush();
+			return Response.ok(writer.toString(), "text/csv").build();
+		} catch (IOException e) {
+			e.printStackTrace();
+			return null;
+		}
+
 	}
 }

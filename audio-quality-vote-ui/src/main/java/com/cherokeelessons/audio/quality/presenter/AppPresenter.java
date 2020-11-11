@@ -1,10 +1,6 @@
 package com.cherokeelessons.audio.quality.presenter;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.inject.Inject;
 
@@ -14,8 +10,8 @@ import com.cherokeelessons.audio.quality.dagger.UiComponents;
 import com.cherokeelessons.audio.quality.model.Api;
 import com.cherokeelessons.audio.quality.model.ClientSessionState;
 import com.cherokeelessons.audio.quality.model.Display;
-import com.cherokeelessons.audio.quality.shared.AudioData;
 import com.cherokeelessons.audio.quality.shared.Consts;
+import com.cherokeelessons.audio.quality.shared.RestApi;
 import com.cherokeelessons.audio.quality.ui.Loading;
 import com.cherokeelessons.audio.quality.ui.Login;
 import com.cherokeelessons.audio.quality.ui.MainMenu;
@@ -52,8 +48,13 @@ public class AppPresenter {
 	}
 
 	private String audioUrl(long vid) {
-		return GWT.getHostPageBaseURL()+"api/audio/file/"+vid;
+		return ServiceRoots.get("api")+RestApi.ApiPaths.audioFile.replace("{vid}", vid+"");
 	}
+	
+	private String csvUrl() {
+		return ServiceRoots.get("api")+RestApi.ApiPaths.audioQualityVotesCsv;
+	}
+	
 	public void init() {
 		ServiceRoots.add("api", GWT.getHostPageBaseURL()+"api");
 		loading.loading(true, "Init");
@@ -98,17 +99,33 @@ public class AppPresenter {
 		MainMenu view = ui.mainMenuUi();
 		display.replace(view);
 		
-		view.voteSubmitted((dataList)->{
+		view.votesSubmitted((dataList)->{
 			loading.loading(true);
-			List<CompletableFuture<AudioData>> f=new ArrayList<>();
 			api.vote(dataList) //
 				.thenRun(()->loading.loading(false)) //
 				.thenRun(()->getAudio(view));
 		});
+		
 		view.lnkVote((v)->getAudio(view));
+		view.lnkLogout((v)->logout());
+		view.lnkDownload((v)->download());
+		view.lnkAbout((v)->view.showAbout());
+	}
+
+	private void download() {
+		DomGlobal.window.open(csvUrl());
+	}
+
+	private void logout() {
+		loading.loading(true);
+		api.logout().thenAccept((v)->{
+			session.clear();
+			DomGlobal.location.reload(true);
+		});
 	}
 
 	private void getAudio(MainMenu view) {
+		loading.loading(true);
 		api.pendingAudio().thenAccept(list-> {
 			list.forEach((item)->item.setUrl(audioUrl(item.getVid())));
 			view.setAudioDataList(list);
