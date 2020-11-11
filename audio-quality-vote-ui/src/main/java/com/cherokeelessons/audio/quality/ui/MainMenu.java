@@ -72,8 +72,8 @@ public class MainMenu extends Composite implements UiView {
 		return container;
 	}
 	
-	private Handler<AudioData> voteHandler=(d)->{};
-	public HandlerRegistration voteSubmitted(Handler<AudioData> handler) {
+	private Handler<List<AudioData>> voteHandler=(d)->{};
+	public HandlerRegistration voteSubmitted(Handler<List<AudioData>> handler) {
 		if (handler==null) {
 			voteHandler=(d)->{};
 		} else {
@@ -99,6 +99,7 @@ public class MainMenu extends Composite implements UiView {
 	private List<Group> groups = new ArrayList<>();
 	public void setAudioDataList(AudioDataList list) {
 		container.clear();
+		groups.clear();
 		for (AudioData item: list) {
 			Group group = new Group();
 			group.data=item;
@@ -158,6 +159,7 @@ public class MainMenu extends Composite implements UiView {
 		row.add(c);
 		
 		MaterialButton submit = new MaterialButton("SUBMIT");
+		List<AudioData> dataList = new ArrayList<>();
 		submit.addClickHandler((e)->{
 			for (Group group: groups) {
 				MaterialRadioButton btnBad = group.btnBad;
@@ -167,8 +169,9 @@ public class MainMenu extends Composite implements UiView {
 				data.setBad(btnBad.getValue()?1:0);
 				data.setPoor(btnPoor.getValue()?1:0);
 				data.setGood(btnGood.getValue()?1:0);
-				async.run(()->voteHandler.handle(data));
+				dataList.add(data);
 			}
+			async.run(()->voteHandler.handle(dataList));
 			container.clear();
 		});
 		c = new MaterialColumn();

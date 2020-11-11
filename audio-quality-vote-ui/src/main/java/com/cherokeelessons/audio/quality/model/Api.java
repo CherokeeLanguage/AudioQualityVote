@@ -1,6 +1,8 @@
 package com.cherokeelessons.audio.quality.model;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.inject.Inject;
 
@@ -30,6 +32,20 @@ public class Api {
 		CallbackFuture<AudioData> cf = new CallbackFuture<>();
 		call(cf).audioVote(state.uid(), state.sessionId(), data.getVid(), data.getBad(), data.getPoor(), data.getGood());
 		return cf.future();
+	}
+	
+	public CompletableFuture<Void> vote(List<AudioData> list) {
+		AtomicInteger counter = new AtomicInteger(list.size());
+		CompletableFuture<Void> cfv = new CompletableFuture<>();
+		for (AudioData data: list) {
+			CallbackFuture<AudioData> cf = new CallbackFuture<>();
+			call(cf).audioVote(state.uid(), state.sessionId(), data.getVid(), data.getBad(), data.getPoor(), data.getGood());
+			cf.future().thenRun(()->counter.decrementAndGet()).thenRun(()->{
+				if (counter.get()>0) return;
+				cfv.complete(null);
+			});
+		}
+		return cfv;
 	}
 	
 	public CompletableFuture<UserInfo> login(String idToken) {

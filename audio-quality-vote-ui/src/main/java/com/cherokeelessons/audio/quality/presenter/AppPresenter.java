@@ -1,6 +1,9 @@
 package com.cherokeelessons.audio.quality.presenter;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.inject.Inject;
@@ -95,16 +98,21 @@ public class AppPresenter {
 		MainMenu view = ui.mainMenuUi();
 		display.replace(view);
 		
-		AtomicInteger counter = new AtomicInteger();
-		view.voteSubmitted((data)->{
-			counter.incrementAndGet();
+		view.voteSubmitted((dataList)->{
 			loading.loading(true);
-			api.vote(data).thenRun(()->loading.loading(counter.decrementAndGet()==0?false:true));
+			List<CompletableFuture<AudioData>> f=new ArrayList<>();
+			api.vote(dataList) //
+				.thenRun(()->loading.loading(false)) //
+				.thenRun(()->getAudio(view));
 		});
-		
-		view.lnkVote((v)->api.pendingAudio().thenApply(list-> {
+		view.lnkVote((v)->getAudio(view));
+	}
+
+	private void getAudio(MainMenu view) {
+		api.pendingAudio().thenAccept(list-> {
 			list.forEach((item)->item.setUrl(audioUrl(item.getVid())));
-			return list;
-		}).thenAccept(list->view.setAudioDataList(list)));
+			view.setAudioDataList(list);
+		});
+		return;
 	}
 }
