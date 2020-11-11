@@ -209,7 +209,7 @@ public interface AudioQualityVoteDao {
 	
 	@SqlQuery("select file," //
 			+ " sum(bad) bad, sum(poor) poor, sum(good) good," //
-			+ " avg(good) - (avg(bad)+avg(poor)) ranking," //
+			+ " avg(good) - (avg(bad)*2+avg(poor)) ranking," //
 			+ " count(*) votes" //
 			+ " from aqv_votes" //
 			+ " where bad>0 OR poor>0 or good>0" //
