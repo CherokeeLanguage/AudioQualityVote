@@ -129,6 +129,7 @@ public class AppPresenter {
 		api.pendingAudio().thenAccept(list-> {
 			list.forEach((item)->item.setUrl(audioUrl(item.getVid())));
 			view.setAudioDataList(list);
+			loading.loading(false);
 		});
 		return;
 	}
