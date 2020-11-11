@@ -20,7 +20,7 @@
 				</h:Div>
 				<h:Div>
 					<h:Text
-						text="This goal of the Cherokee-TTS project is to generate massive amounts of correctly pronounced audio learning materials." />
+						text="The goal of the Cherokee-TTS project is to generate massive amounts of correctly pronounced audio learning materials." />
 				</h:Div>
 				<h:Div>
 					<h:Text
