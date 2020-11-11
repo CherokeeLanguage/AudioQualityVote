@@ -17,6 +17,7 @@ import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.Widget;
 
+import gwt.material.design.client.constants.HeadingSize;
 import gwt.material.design.client.ui.MaterialButton;
 import gwt.material.design.client.ui.MaterialColumn;
 import gwt.material.design.client.ui.MaterialContainer;
@@ -24,6 +25,7 @@ import gwt.material.design.client.ui.MaterialLabel;
 import gwt.material.design.client.ui.MaterialLink;
 import gwt.material.design.client.ui.MaterialRadioButton;
 import gwt.material.design.client.ui.MaterialRow;
+import gwt.material.design.client.ui.html.Heading;
 
 public class MainMenu extends Composite implements UiView {
 
@@ -98,6 +100,10 @@ public class MainMenu extends Composite implements UiView {
 	}
 	private List<Group> groups = new ArrayList<>();
 	public void setAudioDataList(AudioDataList list) {
+		if (list.getList().isEmpty()) {
+			showNoFiles();
+			return;
+		}
 		container.clear();
 		groups.clear();
 		for (AudioData item: list) {
@@ -185,6 +191,13 @@ public class MainMenu extends Composite implements UiView {
 		c.add(submit);
 		row.add(c);
 		container.add(row);
+	}
+
+	private void showNoFiles() {
+		container.clear();
+		Heading h = new Heading(HeadingSize.H5);
+		h.setText("No audio tracks found that you haven't voted on. Try back later.");
+		container.add(h);
 	}
 
 	public void showAbout() {
