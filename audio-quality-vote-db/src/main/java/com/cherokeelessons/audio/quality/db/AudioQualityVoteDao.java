@@ -22,7 +22,6 @@ import org.jdbi.v3.sqlobject.transaction.Transaction;
 import org.mariadb.jdbc.MariaDbPoolDataSource;
 
 import com.cherokeelessons.audio.quality.shared.AudioData;
-import com.cherokeelessons.audio.quality.shared.AudioDataList;
 import com.cherokeelessons.audio.quality.shared.VoteResult;
 
 public interface AudioQualityVoteDao {
@@ -62,6 +61,7 @@ public interface AudioQualityVoteDao {
 	@SqlScript("create index if not exists oauth_provider on aqv_users(oauth_provider(4))")
 	@SqlScript("create index if not exists oauth_id on aqv_users(oauth_id(4))")
 	@SqlScript("create index if not exists email on aqv_users(email(4))")
+	@SqlScript("alter table aqv_users add column if not exists last_login datetime")
 	
 	@SqlScript("create table if not exists aqv_sessions" //
 			+ " (sid serial, uid bigint unsigned, session varchar(254)," //
@@ -225,4 +225,7 @@ public interface AudioQualityVoteDao {
 	
 	@SqlUpdate("delete from aqv_sessions where uid=:uid order by last_seen limit :limit")
 	void deleteOldestSessions(@Bind("uid")Long uid, @Bind("limit")int limit);
+
+	@SqlUpdate("update aqv_users set last_login=NOW(), modified=modified where uid=:uid")
+	void updateLastLogin(@Bind("uid")Long uid);
 }
