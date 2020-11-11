@@ -7,6 +7,8 @@ import javax.inject.Inject;
 import org.fusesource.restygwt.client.REST;
 
 import com.cherokeelessons.audio.quality.presenter.RunAsync;
+import com.cherokeelessons.audio.quality.shared.AudioData;
+import com.cherokeelessons.audio.quality.shared.AudioDataList;
 import com.cherokeelessons.audio.quality.shared.UserInfo;
 
 public class Api {
@@ -24,18 +26,32 @@ public class Api {
 		//
 	}
 	
-	public CompletableFuture<UserInfo> login(String idToken) {
-		CallbackFuture<UserInfo> cf = new CallbackFuture<>();
-		if (idToken==null) {
-			runasync.run(()->cf.future().complete(null));
-			return cf.future();
-		}
-		call(cf).login(idToken);
+	public CompletableFuture<AudioData> vote(AudioData data) {
+		CallbackFuture<AudioData> cf = new CallbackFuture<>();
+		call(cf).audioVote(state.uid(), state.sessionId(), data.getVid(), data.getBad(), data.getPoor(), data.getGood());
 		return cf.future();
 	}
-
-	private String sessionId() {
-		return state.sessionId()==null?"":state.sessionId();
+	
+	public CompletableFuture<UserInfo> login(String idToken) {
+		CallbackFuture<UserInfo> cf = new CallbackFuture<>();
+		CompletableFuture<UserInfo> future = cf.future();
+		if (idToken==null) {
+			runasync.run(()->future.complete(null));
+			return future;
+		}
+		call(cf).login(idToken);
+		future.thenApply((info)->{
+			state.sessionId(info.getSessionId());
+			state.uid(info.getUid());
+			return info;
+		});
+		return future;
+	}
+	
+	public CompletableFuture<AudioDataList> pendingAudio() {
+		CallbackFuture<AudioDataList> cf = new CallbackFuture<AudioDataList>();
+		call(cf).audioList(state.uid(), state.sessionId(), 5);
+		return cf.future();
 	}
 
 	private <T> RestApi call(CallbackFuture<T> cf) {

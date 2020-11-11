@@ -4,23 +4,23 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class AudioInfoList implements Iterable<AudioInfo> {
-	private List<AudioInfo> list;
+public class AudioDataList implements Iterable<AudioData> {
+	private List<AudioData> list;
 	
-	public AudioInfoList() {
-		setList(new ArrayList<AudioInfo>());
+	public AudioDataList() {
+		setList(new ArrayList<AudioData>());
 	}
 
-	public List<AudioInfo> getList() {
+	public List<AudioData> getList() {
 		return list;
 	}
 
-	public void setList(List<AudioInfo> list) {
+	public void setList(List<AudioData> list) {
 		this.list = list;
 	}
 
 	@Override
-	public Iterator<AudioInfo> iterator() {
+	public Iterator<AudioData> iterator() {
 		return list.iterator();
 	}
 }

@@ -1,9 +1,10 @@
 package com.cherokeelessons.audio.quality.shared;
 
 public class UserInfo {
+	private long uid;
 	private String email;
 	private String avatar;
-	private String id;
+	private String sessionId;
 	public String getEmail() {
 		return email;
 	}
@@ -16,10 +17,16 @@ public class UserInfo {
 	public void setAvatar(String avatar) {
 		this.avatar = avatar;
 	}
-	public String getId() {
-		return id;
+	public long getUid() {
+		return uid;
 	}
-	public void setId(String id) {
-		this.id = id;
+	public void setUid(long uid) {
+		this.uid = uid;
+	}
+	public String getSessionId() {
+		return sessionId;
+	}
+	public void setSessionId(String sessionId) {
+		this.sessionId = sessionId;
 	}
 }

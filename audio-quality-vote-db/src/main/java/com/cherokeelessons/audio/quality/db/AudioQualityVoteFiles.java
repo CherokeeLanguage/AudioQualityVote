@@ -3,6 +3,7 @@ package com.cherokeelessons.audio.quality.db;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -10,31 +11,57 @@ import java.util.List;
 import java.util.Properties;
 import java.util.stream.Stream;
 
+import com.cherokeelessons.audio.quality.shared.AudioData;
+
 public class AudioQualityVoteFiles {
 	
-	public static List<File> getFiles() {
-		List<File> files = new ArrayList<File>();
-		try (Stream<Path> stream = Files.list(State.audioFolder.toPath())) {
-			stream.forEach(p->files.add(p.toFile()));
+	public static void main(String[] args) {
+		getAudioData().forEach(System.out::println);
+	}
+	
+	public static File getFolder() {
+		return State.getAudioFolder();
+	}
+	
+	public static List<AudioData> getAudioData() {
+		List<AudioData> files = new ArrayList<>();
+		try (Stream<Path> stream = Files.walk(State.getAudioFolder().toPath())) {
+			stream.forEach(p->{
+				String filename = p.getFileName().toString();
+				if (!filename.endsWith(".mp3")) {
+					return;
+				}
+				Path t = p.resolveSibling(filename.substring(0, filename.length()-4)+".txt");
+				if (!t.toFile().exists()) {
+					return;
+				}
+				String text;
+				try {
+					text = Files.readString(t, StandardCharsets.UTF_8);
+				} catch (IOException e) {
+					e.printStackTrace();
+					return;
+				}
+				files.add(new AudioData(p.toFile().getAbsolutePath(), text));	
+			});
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
-		files.removeIf(f->!f.getName().toLowerCase().endsWith(".mp3"));
 		return files;
 	}
 	
-	protected static class State {
+	private static class State {
 		public static File getAudioFolder() {
 			if (audioFolder == null) {
 				loadPropertiesFile();
 			}
-			return audioFolder;
+			return audioFolder.getAbsoluteFile();
 		}
 
-		protected static Properties properties;
-		protected static File audioFolder;
+		private static Properties properties;
+		private static File audioFolder;
 
-		protected static void loadPropertiesFile() {
+		private static void loadPropertiesFile() {
 			if (properties != null) {
 				return;
 			}

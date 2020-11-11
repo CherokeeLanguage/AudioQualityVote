@@ -12,24 +12,28 @@ public interface RestApi {
 	@POST
 	UserInfo login(@HeaderParam("id-token")String idToken);
 	
+	@Path("users/session-id")
+	@GET
+	Boolean isSessionId(@HeaderParam("uid")Long uid, @HeaderParam("session-id")String sessionId);
+	
 	@Path("user/logout")
 	@GET
-	void logout(@HeaderParam("sessionId")String sessionId);
+	void logout(@HeaderParam("uid")Long uid, @HeaderParam("session-id")String sessionId);
 	
 	@Produces("audio/mpeg")
 	@Path("audio/file/{id}")
 	@GET
-	Object audioGet(@HeaderParam("sessionId")String sessionId, @PathParam("id")String id);
+	Object audioGet(@PathParam("id")String id);
 	
 	@Path("audio/info/{id}")
 	@GET
-	AudioInfo audioInfo(@HeaderParam("sessionId")String sessionId, @PathParam("id")String id);
+	AudioData audioInfo(@HeaderParam("uid")Long uid, @HeaderParam("session-id")String sessionId, @PathParam("id")String id);
 	
-	@Path("audio/vote/{id}/{vote}")
+	@Path("audio/vote/{vid}/{bad}/{poor}/{good}")
 	@POST
-	AudioInfo audioVote(@HeaderParam("sessionId")String sessionId, @PathParam("id")String id, @PathParam("vote")Integer vote);
+	AudioData audioVote(@HeaderParam("uid")Long uid, @HeaderParam("session-id")String sessionId, @PathParam("vid")Long vid, @PathParam("bad")Integer bad, @PathParam("poor")Integer poor, @PathParam("good")Integer good);
 	
 	@Path("audio/list/{qty}")
 	@GET
-	AudioInfoList audioList(@HeaderParam("sessionId")String sessionId, Integer qty);
+	AudioDataList audioList(@HeaderParam("uid")Long uid, @HeaderParam("session-id")String sessionId, @PathParam("qty") Integer qty);
 }

@@ -1,6 +1,7 @@
 package com.cherokeelessons.audio.quality.presenter;
 
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.inject.Inject;
 
@@ -10,6 +11,7 @@ import com.cherokeelessons.audio.quality.dagger.UiComponents;
 import com.cherokeelessons.audio.quality.model.Api;
 import com.cherokeelessons.audio.quality.model.ClientSessionState;
 import com.cherokeelessons.audio.quality.model.Display;
+import com.cherokeelessons.audio.quality.shared.AudioData;
 import com.cherokeelessons.audio.quality.shared.Consts;
 import com.cherokeelessons.audio.quality.ui.Loading;
 import com.cherokeelessons.audio.quality.ui.Login;
@@ -46,6 +48,9 @@ public class AppPresenter {
 		//
 	}
 
+	private String audioUrl(long vid) {
+		return GWT.getHostPageBaseURL()+"api/audio/file/"+vid;
+	}
 	public void init() {
 		ServiceRoots.add("api", GWT.getHostPageBaseURL()+"api");
 		loading.loading(true, "Init");
@@ -89,5 +94,17 @@ public class AppPresenter {
 	private void showMain() {
 		MainMenu view = ui.mainMenuUi();
 		display.replace(view);
+		
+		AtomicInteger counter = new AtomicInteger();
+		view.voteSubmitted((data)->{
+			counter.incrementAndGet();
+			loading.loading(true);
+			api.vote(data).thenRun(()->loading.loading(counter.decrementAndGet()==0?false:true));
+		});
+		
+		view.lnkVote((v)->api.pendingAudio().thenApply(list-> {
+			list.forEach((item)->item.setUrl(audioUrl(item.getVid())));
+			return list;
+		}).thenAccept(list->view.setAudioDataList(list)));
 	}
 }
