@@ -16,7 +16,7 @@
 			<m:MaterialColumn>
 				<h:Div>
 					<h:Text
-						text="This app exists to permite crowd sourced voting on the output from the Cherokee-TTS project." />
+						text="This app exists to permit crowd sourced voting on the output from the Cherokee-TTS project." />
 				</h:Div>
 				<h:Div>
 					<h:Text
@@ -24,7 +24,7 @@
 				</h:Div>
 				<h:Div>
 					<h:Text
-						text="After enough votes are collected, a new training run will be initiated, with new results posted here." />
+						text="After enough votes are collected, a new training run will be initiated, with new results posted here for additional voting." />
 				</h:Div>
 			</m:MaterialColumn>
 		</m:MaterialRow>
