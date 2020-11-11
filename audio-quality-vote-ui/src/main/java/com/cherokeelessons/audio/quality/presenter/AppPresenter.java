@@ -110,6 +110,8 @@ public class AppPresenter {
 		view.lnkLogout((v)->logout());
 		view.lnkDownload((v)->download());
 		view.lnkAbout((v)->view.showAbout());
+		//show about page on first load
+		view.showAbout();
 	}
 
 	private void download() {
