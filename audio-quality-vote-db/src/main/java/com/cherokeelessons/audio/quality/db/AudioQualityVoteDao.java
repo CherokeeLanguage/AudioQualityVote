@@ -8,13 +8,17 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
 
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.sqlobject.SqlObjectPlugin;
+import org.jdbi.v3.sqlobject.config.KeyColumn;
 import org.jdbi.v3.sqlobject.config.RegisterBeanMapper;
+import org.jdbi.v3.sqlobject.config.ValueColumn;
 import org.jdbi.v3.sqlobject.customizer.Bind;
+import org.jdbi.v3.sqlobject.customizer.BindList;
 import org.jdbi.v3.sqlobject.statement.SqlQuery;
 import org.jdbi.v3.sqlobject.statement.SqlScript;
 import org.jdbi.v3.sqlobject.statement.SqlUpdate;
@@ -228,4 +232,19 @@ public interface AudioQualityVoteDao {
 
 	@SqlUpdate("update aqv_users set last_login=NOW(), modified=modified where uid=:uid")
 	void updateLastLogin(@Bind("uid")Long uid);
+
+	@SqlQuery("select file," //
+			+ " avg(good) - (avg(bad)*2+avg(poor)) ranking,"
+			+ " count(*) votes" //
+			+ " from aqv_votes" //
+			+ " where" //
+			+ " (bad>0 OR poor>0 or good>0)" //
+			+ " AND" //
+			+ " vid in (<vids>)" //
+			+ " group by file" //
+			+ " having votes >= :minVotes" //
+			+ " order by file")
+	@KeyColumn("file")
+	@ValueColumn("ranking")
+	Map<String, Integer> voteRankingsByFile(@BindList ("vids")List<Integer> pending, @Bind("minVotes")int minVotes);
 }
