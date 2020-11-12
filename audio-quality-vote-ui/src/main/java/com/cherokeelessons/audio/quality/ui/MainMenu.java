@@ -10,6 +10,7 @@ import com.cherokeelessons.audio.quality.presenter.RunAsync;
 import com.cherokeelessons.audio.quality.shared.AudioData;
 import com.cherokeelessons.audio.quality.shared.AudioDataList;
 import com.google.gwt.core.client.GWT;
+import com.google.gwt.dom.client.Style.FontWeight;
 import com.google.gwt.event.shared.HandlerRegistration;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
@@ -26,6 +27,7 @@ import gwt.material.design.client.ui.MaterialLink;
 import gwt.material.design.client.ui.MaterialRadioButton;
 import gwt.material.design.client.ui.MaterialRow;
 import gwt.material.design.client.ui.html.Heading;
+import gwt.material.design.client.ui.html.Hr;
 
 public class MainMenu extends Composite implements UiView {
 
@@ -107,12 +109,32 @@ public class MainMenu extends Composite implements UiView {
 		container.clear();
 		groups.clear();
 		for (AudioData item: list) {
+			container.add(new Hr());
+			
 			Group group = new Group();
 			group.data=item;
 			
+			MaterialRow fileNameRow = new MaterialRow();
+			
+			MaterialColumn fileNameColumn = new MaterialColumn();
+			String audioFile = item.getAudioFile();
+			int last = audioFile.lastIndexOf("/");
+			if (last>-1) {
+				audioFile=audioFile.substring(last+1);
+			}
+			MaterialLabel filenameText = new MaterialLabel(audioFile);
+			filenameText.setFontWeight(FontWeight.NORMAL);
+			fileNameColumn.add(filenameText);
+			fileNameRow.add(fileNameColumn);
+			
+			container.add(fileNameRow);
+			
 			MaterialRow textRow = new MaterialRow();
+			
 			MaterialColumn c0 = new MaterialColumn();
 			MaterialLabel text = new MaterialLabel(item.getText().trim());
+			text.setFontWeight(FontWeight.BOLD);
+			text.setFontSize("125pct");
 			c0.add(text);
 			textRow.add(c0);
 			
@@ -162,6 +184,7 @@ public class MainMenu extends Composite implements UiView {
 			groups.add(group);
 			container.add(row);
 		}
+		container.add(new Hr());
 		
 		MaterialRow row = new MaterialRow();
 		MaterialColumn c;
