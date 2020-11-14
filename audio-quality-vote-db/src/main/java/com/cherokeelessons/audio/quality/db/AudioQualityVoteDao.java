@@ -18,7 +18,6 @@ import org.jdbi.v3.sqlobject.config.KeyColumn;
 import org.jdbi.v3.sqlobject.config.RegisterBeanMapper;
 import org.jdbi.v3.sqlobject.config.ValueColumn;
 import org.jdbi.v3.sqlobject.customizer.Bind;
-import org.jdbi.v3.sqlobject.customizer.BindList;
 import org.jdbi.v3.sqlobject.statement.SqlQuery;
 import org.jdbi.v3.sqlobject.statement.SqlScript;
 import org.jdbi.v3.sqlobject.statement.SqlUpdate;
@@ -26,10 +25,11 @@ import org.jdbi.v3.sqlobject.transaction.Transaction;
 import org.mariadb.jdbc.MariaDbPoolDataSource;
 
 import com.cherokeelessons.audio.quality.shared.AudioData;
-import com.cherokeelessons.audio.quality.shared.Total;
 import com.cherokeelessons.audio.quality.shared.VoteResult;
 
 public interface AudioQualityVoteDao {
+	
+	int MIN_VOTES_FILTER_OUT_BAD = 4;
 
 	static AudioQualityVoteDao onDemand() {
 		if (State.dao != null) {
@@ -108,16 +108,31 @@ public interface AudioQualityVoteDao {
 	
 	@Transaction
 	default List<Integer> pendingIds(long uid) {
+		Map<String, Integer> rankings = voteRankingsByFile(MIN_VOTES_FILTER_OUT_BAD);
 		List<Integer> undecided = undecidedIds(uid);
+		
+		for (Integer vid : undecided) {
+			AudioData audioData = audioData(vid);
+			Integer ranking = rankings.get(audioData.getAudioFile());
+			File file = new File(AudioQualityVoteFiles.getFolder(), audioData.getAudioFile());
+			if (!file.exists() || (ranking==null?0:ranking)<0) {
+				removeVoteEntry(uid, vid);
+			}
+		}
+		
 		if (undecided.isEmpty()) {
 			File parentFolder = AudioQualityVoteFiles.getFolder().getAbsoluteFile();
 			List<AudioData> files = AudioQualityVoteFiles.getAudioData();
 			files.forEach(f->{
 				String relative = f.getAudioFile().substring(parentFolder.getPath().length());
-				addPendingFile(uid, relative, f.getText());
+				Integer ranking = rankings.get(f.getAudioFile());
+				if ((ranking==null?0:ranking)>=0) {
+					addPendingFile(uid, relative, f.getText());
+				}
 			});
 			return undecidedIds(uid);
 		}
+		
 		return undecided;
 	}
 
@@ -240,14 +255,11 @@ public interface AudioQualityVoteDao {
 			+ " from aqv_votes" //
 			+ " where" //
 			+ " (bad>0 OR poor>0 or good>0)" //
-			+ " AND" //
-			+ " vid in (<vids>)" //
 			+ " group by file" //
-			+ " having votes >= :minVotes" //
-			+ " order by file")
+			+ " having votes >= :minVotes")
 	@KeyColumn("file")
 	@ValueColumn("ranking")
-	Map<String, Integer> voteRankingsByFile(@BindList ("vids")List<Integer> pending, @Bind("minVotes")int minVotes);
+	Map<String, Integer> voteRankingsByFile(@Bind("minVotes")int minVotes);
 
 	@SqlQuery("select count(*) from aqv_votes where uid=:uid AND good=0 AND poor=0 AND bad=0")
 	int userPendingVoteCount(@Bind("uid")Long uid);

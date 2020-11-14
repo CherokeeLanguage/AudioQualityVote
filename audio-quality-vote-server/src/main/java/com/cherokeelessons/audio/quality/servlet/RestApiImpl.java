@@ -8,7 +8,6 @@ import java.security.GeneralSecurityException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -38,8 +37,6 @@ import com.opencsv.CSVWriter;
 
 @Path("/")
 public class RestApiImpl implements RestApi {
-
-	private static final int COUNT_FILTER_OUT_BAD = 4;
 
 	@Context
 	protected HttpSession session;
@@ -158,16 +155,8 @@ public class RestApiImpl implements RestApi {
 			if (pending.size() > qty) {
 				pending = pending.subList(0, qty);
 			}
-			Map<String, Integer> rankings = dao().voteRankingsByFile(pending, COUNT_FILTER_OUT_BAD);
 			for (Integer vid : pending) {
-				AudioData audioData = dao().audioData(vid);
-				Integer ranking = rankings.get(audioData.getAudioFile());
-				File file = new File(AudioQualityVoteFiles.getFolder(), audioData.getAudioFile());
-				if (!file.exists() || (ranking==null?0:ranking)<0) {
-					dao().removeVoteEntry(uid, vid);
-				} else {
-					list.getList().add(audioData);
-				}
+				list.getList().add(dao().audioData(vid));
 			}
 		} while (list.getList().isEmpty());
 		return list;
