@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.core.transaction.SerializableTransactionRunner;
@@ -134,11 +135,15 @@ public interface AudioQualityVoteDao {
 
 	default void scanForNewFiles(long uid) {
 		try {
+			AtomicInteger maxNewFiles=new AtomicInteger(50);
 			Set<String> already = audioDataFilesFor(uid);
 			Map<String, Integer> rankings = voteRankingsByFile(MIN_VOTES_FILTER_OUT_BAD);
 			File parentFolder = AudioQualityVoteFiles.getFolder().getAbsoluteFile();
 			List<AudioData> files = AudioQualityVoteFiles.getAudioData();
 			files.forEach(f->{
+				if (maxNewFiles.get()<0) {
+					return;
+				}
 				String relative = f.getAudioFile().substring(parentFolder.getPath().length());
 				if (already.contains(relative)) {
 					return;
@@ -148,6 +153,7 @@ public interface AudioQualityVoteDao {
 					return;
 				}
 				addPendingFile(uid, relative, f.getText());
+				maxNewFiles.decrementAndGet();
 			});
 		} catch (Exception e) {
 			//
