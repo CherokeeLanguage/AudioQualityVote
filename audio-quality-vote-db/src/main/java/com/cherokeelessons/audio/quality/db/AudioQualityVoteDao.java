@@ -141,7 +141,7 @@ public interface AudioQualityVoteDao {
 			File parentFolder = AudioQualityVoteFiles.getFolder().getAbsoluteFile();
 			List<AudioData> files = AudioQualityVoteFiles.getAudioData();
 			files.forEach(f->{
-				if (maxNewFiles.get()<0) {
+				if (maxNewFiles.get()<=0) {
 					return;
 				}
 				String relative = f.getAudioFile().substring(parentFolder.getPath().length());
