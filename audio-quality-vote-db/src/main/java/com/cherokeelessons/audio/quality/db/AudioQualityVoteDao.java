@@ -13,6 +13,7 @@ import java.util.Properties;
 import java.util.Random;
 
 import org.jdbi.v3.core.Jdbi;
+import org.jdbi.v3.core.transaction.SerializableTransactionRunner;
 import org.jdbi.v3.sqlobject.SqlObjectPlugin;
 import org.jdbi.v3.sqlobject.config.KeyColumn;
 import org.jdbi.v3.sqlobject.config.RegisterBeanMapper;
@@ -50,6 +51,8 @@ public interface AudioQualityVoteDao {
 			throw new IllegalStateException(e);
 		}		
 		Jdbi jdbi = Jdbi.create(pool);
+		final SerializableTransactionRunner transactionHandler = new SerializableTransactionRunner();
+		jdbi.setTransactionHandler(transactionHandler); //auto retry transactions that deadlock
 		jdbi.installPlugin(new SqlObjectPlugin());
 		AudioQualityVoteDao onDemand = jdbi.onDemand(AudioQualityVoteDao.class);
 		onDemand.init();
@@ -129,16 +132,20 @@ public interface AudioQualityVoteDao {
 	}
 
 	default void scanForNewFiles(long uid) {
-		Map<String, Integer> rankings = voteRankingsByFile(MIN_VOTES_FILTER_OUT_BAD);
-		File parentFolder = AudioQualityVoteFiles.getFolder().getAbsoluteFile();
-		List<AudioData> files = AudioQualityVoteFiles.getAudioData();
-		files.forEach(f->{
-			String relative = f.getAudioFile().substring(parentFolder.getPath().length());
-			Integer ranking = rankings.get(f.getAudioFile());
-			if ((ranking==null?0:ranking)>=0) {
-				addPendingFile(uid, relative, f.getText());
-			}
-		});
+		try {
+			Map<String, Integer> rankings = voteRankingsByFile(MIN_VOTES_FILTER_OUT_BAD);
+			File parentFolder = AudioQualityVoteFiles.getFolder().getAbsoluteFile();
+			List<AudioData> files = AudioQualityVoteFiles.getAudioData();
+			files.forEach(f->{
+				String relative = f.getAudioFile().substring(parentFolder.getPath().length());
+				Integer ranking = rankings.get(f.getAudioFile());
+				if ((ranking==null?0:ranking)>=0) {
+					addPendingFile(uid, relative, f.getText());
+				}
+			});
+		} catch (Exception e) {
+			//
+		}
 	}
 
 	@Transaction
