@@ -32,7 +32,7 @@ import com.cherokeelessons.audio.quality.shared.VoteResult;
 
 public interface AudioQualityVoteDao {
 	
-	int MIN_VOTES_FILTER_OUT_BAD = 4;
+	int MIN_VOTES_FILTER = 4;
 
 	static AudioQualityVoteDao onDemand() {
 		if (State.dao != null) {
@@ -113,14 +113,15 @@ public interface AudioQualityVoteDao {
 	
 	@Transaction
 	default List<Integer> pendingIds(long uid) {
-		Map<String, Integer> rankings = voteRankingsByFile(MIN_VOTES_FILTER_OUT_BAD);
+		Map<String, Integer> rankings = voteRankingsByFile(MIN_VOTES_FILTER);
 		List<Integer> undecided = undecidedIds(uid);
 		
 		for (Integer vid : undecided) {
 			AudioData audioData = audioData(vid);
 			Integer ranking = rankings.get(audioData.getAudioFile());
+			ranking = (ranking==null?0:ranking);
 			File file = new File(AudioQualityVoteFiles.getFolder(), audioData.getAudioFile());
-			if (!file.exists() || (ranking==null?0:ranking)<0) {
+			if (!file.exists() || ranking<0 || ranking>=.5) {
 				removeVoteEntry(uid, vid);
 			}
 		}
@@ -137,7 +138,7 @@ public interface AudioQualityVoteDao {
 		try {
 			AtomicInteger maxNewFiles=new AtomicInteger(50);
 			Set<String> already = audioDataFilesFor(uid);
-			Map<String, Integer> rankings = voteRankingsByFile(MIN_VOTES_FILTER_OUT_BAD);
+			Map<String, Integer> rankings = voteRankingsByFile(MIN_VOTES_FILTER);
 			File parentFolder = AudioQualityVoteFiles.getFolder().getAbsoluteFile();
 			List<AudioData> files = AudioQualityVoteFiles.getAudioData();
 			files.forEach(f->{
