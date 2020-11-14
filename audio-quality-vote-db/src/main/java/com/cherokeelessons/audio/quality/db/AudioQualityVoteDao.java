@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
+import java.util.Set;
 
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.core.transaction.SerializableTransactionRunner;
@@ -133,11 +134,15 @@ public interface AudioQualityVoteDao {
 
 	default void scanForNewFiles(long uid) {
 		try {
+			Set<String> already = audioDataFilesFor(uid);
 			Map<String, Integer> rankings = voteRankingsByFile(MIN_VOTES_FILTER_OUT_BAD);
 			File parentFolder = AudioQualityVoteFiles.getFolder().getAbsoluteFile();
 			List<AudioData> files = AudioQualityVoteFiles.getAudioData();
 			files.forEach(f->{
 				String relative = f.getAudioFile().substring(parentFolder.getPath().length());
+				if (already.contains(relative)) {
+					return;
+				}
 				Integer ranking = rankings.get(f.getAudioFile());
 				if ((ranking==null?0:ranking)>=0) {
 					addPendingFile(uid, relative, f.getText());
@@ -238,6 +243,9 @@ public interface AudioQualityVoteDao {
 
 	@SqlQuery("select vid from aqv_votes where uid=:uid order by file")
 	List<Integer> audioDataIdsFor(@Bind("uid")Long uid);
+	
+	@SqlQuery("select file from aqv_votes where uid=:uid")
+	Set<String> audioDataFilesFor(@Bind("uid")Long uid);
 	
 	@SqlQuery("select file," //
 			+ " sum(bad) bad, sum(poor) poor, sum(good) good," //
