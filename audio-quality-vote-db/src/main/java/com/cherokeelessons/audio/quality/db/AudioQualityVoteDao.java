@@ -26,6 +26,7 @@ import org.jdbi.v3.sqlobject.transaction.Transaction;
 import org.mariadb.jdbc.MariaDbPoolDataSource;
 
 import com.cherokeelessons.audio.quality.shared.AudioData;
+import com.cherokeelessons.audio.quality.shared.Total;
 import com.cherokeelessons.audio.quality.shared.VoteResult;
 
 public interface AudioQualityVoteDao {
@@ -247,4 +248,16 @@ public interface AudioQualityVoteDao {
 	@KeyColumn("file")
 	@ValueColumn("ranking")
 	Map<String, Integer> voteRankingsByFile(@BindList ("vids")List<Integer> pending, @Bind("minVotes")int minVotes);
+
+	@SqlQuery("select count(*) from aqv_votes where uid=:uid AND good=0 AND poor=0 AND bad=0")
+	int userPendingVoteCount(@Bind("uid")Long uid);
+
+	@SqlQuery("select count(*) from aqv_votes where uid=:uid AND (good=1 OR poor=1 OR bad=1)")
+	int userCompletedVoteCount(@Bind("uid")Long uid);
+
+	@SqlQuery("select uid from aqv_votes group by uid order by count(uid) desc, uid desc limit :limit")
+	List<Long> topUsersByVoteCounts(@Bind("limit")int limit);
+
+	@SqlQuery("select count(distinct file) from aqv_votes")
+	long audioTrackCount();
 }

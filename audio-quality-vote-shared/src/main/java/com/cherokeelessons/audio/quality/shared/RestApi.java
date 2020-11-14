@@ -1,5 +1,7 @@
 package com.cherokeelessons.audio.quality.shared;
 
+import java.util.List;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
@@ -12,7 +14,7 @@ public interface RestApi {
 	@POST
 	UserInfo login(@HeaderParam("id-token") String idToken);
 
-	@Path("users/session-id")
+	@Path("user/session-id")
 	@GET
 	Boolean isSessionId(@HeaderParam("uid") Long uid, @HeaderParam("session-id") String sessionId);
 
@@ -35,6 +37,14 @@ public interface RestApi {
 	AudioData audioVote(@HeaderParam("uid") Long uid, @HeaderParam("session-id") String sessionId,
 			@PathParam("vid") Long vid, @PathParam("bad") Integer bad, @PathParam("poor") Integer poor,
 			@PathParam("good") Integer good);
+	
+	@Path("audio/vote/my/counts")
+	@GET
+	UserVoteCount myVoteCounts(@HeaderParam("uid") Long uid, @HeaderParam("session-id") String sessionId);
+	
+	@Path("user/top-voters")
+	@GET
+	TopVoters topVoters(@HeaderParam("uid") Long uid, @HeaderParam("session-id") String sessionId);
 
 	@Path("audio/list/undecided/{qty}")
 	@GET
@@ -58,7 +68,7 @@ public interface RestApi {
 
 	@Path("audio/list/count")
 	@GET
-	AudioDataList audioListCount(@HeaderParam("uid") Long uid, @HeaderParam("session-id") String sessionId);
+	Total audioTrackCount(@HeaderParam("uid") Long uid, @HeaderParam("session-id") String sessionId);
 	
 	interface ApiPaths {
 		String audioFile = "audio/file/{vid}";

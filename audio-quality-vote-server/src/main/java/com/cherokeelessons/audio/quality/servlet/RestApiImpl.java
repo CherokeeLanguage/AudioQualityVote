@@ -25,7 +25,10 @@ import com.cherokeelessons.audio.quality.shared.AudioData;
 import com.cherokeelessons.audio.quality.shared.AudioDataList;
 import com.cherokeelessons.audio.quality.shared.Consts;
 import com.cherokeelessons.audio.quality.shared.RestApi;
+import com.cherokeelessons.audio.quality.shared.TopVoters;
+import com.cherokeelessons.audio.quality.shared.Total;
 import com.cherokeelessons.audio.quality.shared.UserInfo;
+import com.cherokeelessons.audio.quality.shared.UserVoteCount;
 import com.cherokeelessons.audio.quality.shared.VoteResult;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
@@ -210,12 +213,12 @@ public class RestApiImpl implements RestApi {
 	}
 
 	@Override
-	public AudioDataList audioListCount(Long uid, String sessionId) {
+	public Total audioTrackCount(Long uid, String sessionId) {
 		if (!isSessionId(uid, sessionId)) {
 			return null;
 		}
-		// TODO Auto-generated method stub
-		return null;
+		Total total = new Total(dao().audioTrackCount());
+		return total;
 	}
 
 	@Override
@@ -236,6 +239,34 @@ public class RestApiImpl implements RestApi {
 			e.printStackTrace();
 			return null;
 		}
+	}
 
+	@Override
+	public UserVoteCount myVoteCounts(Long uid, String sessionId) {
+		if (!isSessionId(uid, sessionId)) {
+			return null;
+		}
+		UserVoteCount counts = new UserVoteCount();
+		counts.setPending(dao().userPendingVoteCount(uid));
+		counts.setVoted(dao().userCompletedVoteCount(uid));
+		counts.setUid(uid);
+		return counts;
+	}
+
+	@Override
+	public TopVoters topVoters(Long uid, String sessionId) {
+		if (!isSessionId(uid, sessionId)) {
+			return null;
+		}
+		TopVoters topVoters = new TopVoters();
+		List<Long> uids = dao().topUsersByVoteCounts(3);
+		for (Long topUid: uids) {
+			UserVoteCount counts = new UserVoteCount();
+			counts.setPending(dao().userPendingVoteCount(topUid));
+			counts.setVoted(dao().userCompletedVoteCount(topUid));
+			counts.setUid(topUid);			
+			topVoters.getTopVoters().add(counts);
+		}
+		return topVoters;
 	}
 }
