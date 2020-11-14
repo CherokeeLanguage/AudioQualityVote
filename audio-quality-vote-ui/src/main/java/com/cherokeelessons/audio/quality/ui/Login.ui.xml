@@ -1,14 +1,22 @@
 <!DOCTYPE ui:UiBinder SYSTEM "http://dl.google.com/gwt/DTD/xhtml.ent">
 <ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
 	xmlns:g="urn:import:com.google.gwt.user.client.ui"
-	xmlns:m="urn:import:gwt.material.design.client.ui">
+	xmlns:m="urn:import:gwt.material.design.client.ui"
+	xmlns:h="urn:import:gwt.material.design.client.ui.html">
 	<ui:style>
 	
 	</ui:style>
 	<m:MaterialPanel>
 		<m:MaterialContainer ui:field="container"
 			containerEnabled="true">
-			<m:MaterialRow>
+			<m:MaterialRow style="text-align: center">
+				<h:Heading size="H3">The Audio Quality Vote Project</h:Heading>
+			</m:MaterialRow>
+			<m:MaterialRow fontSize="125pct" style="text-align: center">
+					<h:Text
+						text="Crowd sourced voting for the Cherokee-TTS project." />
+			</m:MaterialRow>
+			<m:MaterialRow style="text-align: center">
 				<m:MaterialColumn grid="s1 m2 l3" hideOn="NONE">
 					<m:html.Span style="color: white; width: 0px;">.</m:html.Span>
 				</m:MaterialColumn>
@@ -16,7 +24,7 @@
 					<m:MaterialPanel>
 						<m:MaterialContainer>
 							<m:MaterialButton ui:field="btnLogin"
-								text="Login" />
+								text="Login with Google" />
 						</m:MaterialContainer>
 					</m:MaterialPanel>
 				</m:MaterialColumn>
@@ -24,6 +32,18 @@
 					hideOn="HIDE_ON_SMALL_DOWN">
 					<m:html.Span style="color: white; width: 0px;">.</m:html.Span>
 				</m:MaterialColumn>
+			</m:MaterialRow>
+			<m:MaterialRow style="text-align: center">
+					<h:Text
+						text="A Google login is required to permit correct tabulation of votes." />
+			</m:MaterialRow>
+			<m:MaterialRow  style="text-align: center">
+			<h:Div style="display: inline-block; padding: 1em;">
+				<m:MaterialLink target="_blank" href="https://github.com/CherokeeLanguage/AudioQualityVote" text="Web App Source Code"></m:MaterialLink>
+			</h:Div>
+			<h:Div style="display: inline-block; padding: 1em;">
+				<m:MaterialLink target="_blank" href="https://www.cherokeelessons.com/apps/privacy-policy---apps/" text="Privacy Policy"></m:MaterialLink>
+			</h:Div>
 			</m:MaterialRow>
 		</m:MaterialContainer>
 	</m:MaterialPanel>
