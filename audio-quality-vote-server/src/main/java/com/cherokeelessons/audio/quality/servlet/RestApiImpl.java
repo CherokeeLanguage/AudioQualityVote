@@ -81,6 +81,7 @@ public class RestApiImpl implements RestApi {
 		dao().updateEmail("Google", oauthId, email);
 		long uid = dao().uid(email);
 		dao().updateLastLogin(uid);
+		dao().scanForNewFiles(uid);
 		UserInfo info = new UserInfo();
 		info.setUid(uid);
 		info.setEmail(email);

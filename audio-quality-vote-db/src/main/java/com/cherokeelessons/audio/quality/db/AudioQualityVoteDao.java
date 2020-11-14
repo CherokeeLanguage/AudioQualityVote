@@ -121,19 +121,24 @@ public interface AudioQualityVoteDao {
 		}
 		
 		if (undecided.isEmpty()) {
-			File parentFolder = AudioQualityVoteFiles.getFolder().getAbsoluteFile();
-			List<AudioData> files = AudioQualityVoteFiles.getAudioData();
-			files.forEach(f->{
-				String relative = f.getAudioFile().substring(parentFolder.getPath().length());
-				Integer ranking = rankings.get(f.getAudioFile());
-				if ((ranking==null?0:ranking)>=0) {
-					addPendingFile(uid, relative, f.getText());
-				}
-			});
+			scanForNewFiles(uid);
 			return undecidedIds(uid);
 		}
 		
 		return undecided;
+	}
+
+	default void scanForNewFiles(long uid) {
+		Map<String, Integer> rankings = voteRankingsByFile(MIN_VOTES_FILTER_OUT_BAD);
+		File parentFolder = AudioQualityVoteFiles.getFolder().getAbsoluteFile();
+		List<AudioData> files = AudioQualityVoteFiles.getAudioData();
+		files.forEach(f->{
+			String relative = f.getAudioFile().substring(parentFolder.getPath().length());
+			Integer ranking = rankings.get(f.getAudioFile());
+			if ((ranking==null?0:ranking)>=0) {
+				addPendingFile(uid, relative, f.getText());
+			}
+		});
 	}
 
 	@Transaction
