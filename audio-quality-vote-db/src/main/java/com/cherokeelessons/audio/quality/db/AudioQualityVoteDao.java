@@ -144,9 +144,10 @@ public interface AudioQualityVoteDao {
 					return;
 				}
 				Integer ranking = rankings.get(f.getAudioFile());
-				if ((ranking==null?0:ranking)>=0) {
-					addPendingFile(uid, relative, f.getText());
+				if ((ranking==null?0:ranking)<0) {
+					return;
 				}
+				addPendingFile(uid, relative, f.getText());
 			});
 		} catch (Exception e) {
 			//
