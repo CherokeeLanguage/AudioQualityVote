@@ -295,10 +295,10 @@ public interface AudioQualityVoteDao {
 	@SqlQuery("select count(*) from aqv_votes where uid=:uid AND (good=1 OR poor=1 OR bad=1)")
 	int userCompletedVoteCount(@Bind("uid")Long uid);
 
-	@SqlQuery("select uid, count(*) voted from aqv_votes" //
+	@SqlQuery("select uid, count(*) voted, max(modified) m from aqv_votes" //
 			+ " where (good!=0 OR poor!=0 OR bad!=0)" //
 			+ " group by uid" //
-			+ " order by voted desc, uid desc" //
+			+ " order by voted desc, m desc" //
 			+ " limit :limit")
 	List<Long> topUsersByVoteCounts(@Bind("limit")int limit);
 
