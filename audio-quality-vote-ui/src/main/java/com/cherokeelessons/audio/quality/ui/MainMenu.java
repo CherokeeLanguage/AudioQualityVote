@@ -9,6 +9,8 @@ import com.cherokeelessons.audio.quality.model.Handler;
 import com.cherokeelessons.audio.quality.presenter.RunAsync;
 import com.cherokeelessons.audio.quality.shared.AudioData;
 import com.cherokeelessons.audio.quality.shared.AudioDataList;
+import com.cherokeelessons.audio.quality.shared.TopVoters;
+import com.cherokeelessons.audio.quality.shared.UserVoteCount;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.dom.client.Style.FontWeight;
 import com.google.gwt.event.shared.HandlerRegistration;
@@ -68,6 +70,19 @@ public class MainMenu extends Composite implements UiView {
 	protected MaterialLink lnkLogout;
 	public HandlerRegistration lnkLogout(Handler<Void> handler) {
 		return lnkLogout.addClickHandler((e)->handler.handle(null));
+	}
+
+	@UiField
+	protected MaterialLink lnkStats;
+	public HandlerRegistration lnkStats(Handler<Void> handler) {
+		return lnkStats.addClickHandler((e)->handler.handle(null));
+	}
+	
+	public void showStats(TopVoters topVoters, UserVoteCount myStats) {
+		container.clear();
+		VoteStats stats = new VoteStats();
+		stats.setStats(topVoters, myStats);
+		container.add(stats);
 	}
 	
 	@UiField

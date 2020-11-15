@@ -11,7 +11,9 @@ import org.fusesource.restygwt.client.REST;
 import com.cherokeelessons.audio.quality.presenter.RunAsync;
 import com.cherokeelessons.audio.quality.shared.AudioData;
 import com.cherokeelessons.audio.quality.shared.AudioDataList;
+import com.cherokeelessons.audio.quality.shared.TopVoters;
 import com.cherokeelessons.audio.quality.shared.UserInfo;
+import com.cherokeelessons.audio.quality.shared.UserVoteCount;
 
 public class Api {
 	@Inject
@@ -26,6 +28,18 @@ public class Api {
 	@Inject
 	public Api() {
 		//
+	}
+	
+	public CompletableFuture<TopVoters> topVoters() {
+		CallbackFuture<TopVoters> cf = new CallbackFuture<>();
+		call(cf).topVoters(state.uid(), state.sessionId());
+		return cf.future();
+	}
+	
+	public CompletableFuture<UserVoteCount> myVotes() {
+		CallbackFuture<UserVoteCount> cf = new CallbackFuture<>();
+		call(cf).myVoteCounts(state.uid(), state.sessionId());
+		return cf.future();
 	}
 	
 	public CompletableFuture<AudioData> vote(AudioData data) {

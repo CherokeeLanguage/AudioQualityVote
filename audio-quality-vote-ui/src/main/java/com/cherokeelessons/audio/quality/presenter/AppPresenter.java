@@ -1,6 +1,10 @@
 package com.cherokeelessons.audio.quality.presenter;
 
+import java.awt.Container;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.inject.Inject;
 
@@ -12,6 +16,8 @@ import com.cherokeelessons.audio.quality.model.ClientSessionState;
 import com.cherokeelessons.audio.quality.model.Display;
 import com.cherokeelessons.audio.quality.shared.Consts;
 import com.cherokeelessons.audio.quality.shared.RestApi;
+import com.cherokeelessons.audio.quality.shared.TopVoters;
+import com.cherokeelessons.audio.quality.shared.UserVoteCount;
 import com.cherokeelessons.audio.quality.ui.Loading;
 import com.cherokeelessons.audio.quality.ui.Login;
 import com.cherokeelessons.audio.quality.ui.MainMenu;
@@ -110,8 +116,21 @@ public class AppPresenter {
 		view.lnkLogout((v)->logout());
 		view.lnkDownload((v)->download());
 		view.lnkAbout((v)->view.showAbout());
+		view.lnkStats((v)->showVoteStats(view));
 		//show about page on first load
 		view.showAbout();
+	}
+
+	private void showVoteStats(MainMenu view) {
+		loading.loading(true);
+		CompletableFuture<UserVoteCount> fMyVotes = api.myVotes();
+		fMyVotes.thenAccept((myVotes)->{
+			CompletableFuture<TopVoters> fTopVoters = api.topVoters();
+			fTopVoters.thenAccept((topVoters)->{
+				loading.loading(false);
+				view.showStats(topVoters, myVotes);
+			});
+		});
 	}
 
 	private void download() {

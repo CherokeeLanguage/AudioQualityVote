@@ -1,0 +1,18 @@
+<!DOCTYPE ui:UiBinder SYSTEM "http://dl.google.com/gwt/DTD/xhtml.ent">
+<ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
+	xmlns:g="urn:import:com.google.gwt.user.client.ui"
+	xmlns:m="urn:import:gwt.material.design.client.ui"
+	xmlns:h="urn:import:gwt.material.design.client.ui.html">
+	<ui:style>
+	
+	</ui:style>
+	<m:MaterialRow>
+		<m:MaterialColumn grid="s3 m3 l2" offset="s0 m0 l1">
+			<h:Span text="UID:" style="padding-right: .25em;"/>
+			<h:Span ui:field="uid" style="padding-right: .5em;"/>
+			<h:Span text="Votes Cast:" style="padding-right: .25em;"/>
+			<h:Span ui:field="votesCast" style="padding-right: .5em;"/>
+			<h:Span></h:Span>
+		</m:MaterialColumn>
+	</m:MaterialRow>
+</ui:UiBinder> 

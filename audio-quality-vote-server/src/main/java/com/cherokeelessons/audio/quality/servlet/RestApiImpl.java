@@ -257,6 +257,9 @@ public class RestApiImpl implements RestApi {
 			counts.setUid(topUid);			
 			topVoters.getTopVoters().add(counts);
 		}
+		Collections.sort(topVoters.getTopVoters(), 
+			(a,b)->Integer.compare(b.getVoted(), a.getVoted())
+		);
 		return topVoters;
 	}
 }

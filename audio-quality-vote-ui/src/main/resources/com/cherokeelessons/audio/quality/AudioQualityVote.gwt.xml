@@ -24,6 +24,9 @@
 	<inherits name="org.fusesource.restygwt.RestyGWT" />
 	<set-property name="restygwt.encodeDecode.useGwtJackson"
 		value="true" />
+	<extend-configuration-property
+		name="gwtjackson.configuration.extension"
+		value="com.cherokeelessons.audio.quality.model.RestyGwtMixin" />
 
 	<inherits name="com.google.gwt.logging.Logging" />
 	<set-property name="gwt.logging.logLevel" value="INFO" />
