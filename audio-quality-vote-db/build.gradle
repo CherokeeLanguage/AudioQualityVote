@@ -16,6 +16,7 @@ dependencies {
 	implementation "org.jdbi:jdbi3-core:3.17.0"
 	implementation "org.jdbi:jdbi3-sqlobject:3.17.0"
 	implementation 'org.mariadb.jdbc:mariadb-java-client:2.7.0'
+	implementation "com.zaxxer:HikariCP:3.4.5"
 }
 
 eclipse {

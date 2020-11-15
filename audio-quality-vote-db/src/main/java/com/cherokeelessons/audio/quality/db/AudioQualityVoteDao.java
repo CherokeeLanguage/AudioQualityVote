@@ -29,6 +29,8 @@ import org.mariadb.jdbc.MariaDbPoolDataSource;
 
 import com.cherokeelessons.audio.quality.shared.AudioData;
 import com.cherokeelessons.audio.quality.shared.VoteResult;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 
 public interface AudioQualityVoteDao {
 	
@@ -40,19 +42,21 @@ public interface AudioQualityVoteDao {
 		}
 		State.loadPropertiesFile();
 		
-		MariaDbPoolDataSource pool = new MariaDbPoolDataSource();
-		try {
-			pool.setUrl(State.jdbcUrl);
-			pool.setUser(State.user);
-			pool.setPassword(State.password);
-			pool.setMaxIdleTime(60);
-			pool.setMaxPoolSize(256);
-			pool.setMinPoolSize(1);
-		} catch (SQLException e) {
-			pool.close();
-			throw new IllegalStateException(e);
-		}		
-		Jdbi jdbi = Jdbi.create(pool);
+		final HikariConfig config = new HikariConfig();
+		config.setIdleTimeout(5 * 60 * 1000l);
+		config.setMaximumPoolSize(Math.max(4, Math.max(Runtime.getRuntime().availableProcessors() - 1, 1)));
+		config.setMaxLifetime(15 * 60 * 1000l); // min allowed
+		config.setMinimumIdle(0);
+		config.setInitializationFailTimeout(0);
+		config.setConnectionTimeout(0);
+		
+		config.setJdbcUrl(State.jdbcUrl);
+		config.setUsername(State.user);
+		config.setPassword(State.password);
+		
+		HikariDataSource ds = new HikariDataSource(config);
+		
+		Jdbi jdbi = Jdbi.create(ds);
 		final SerializableTransactionRunner transactionHandler = new SerializableTransactionRunner();
 		jdbi.setTransactionHandler(transactionHandler); //auto retry transactions that deadlock
 		jdbi.installPlugin(new SqlObjectPlugin());
