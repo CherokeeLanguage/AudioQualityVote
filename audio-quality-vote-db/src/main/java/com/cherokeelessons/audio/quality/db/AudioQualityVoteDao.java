@@ -54,9 +54,9 @@ public interface AudioQualityVoteDao {
 		config.setUsername(State.user);
 		config.setPassword(State.password);
 		
-		HikariDataSource ds = new HikariDataSource(config);
+		State.ds = new HikariDataSource(config);
 		
-		Jdbi jdbi = Jdbi.create(ds);
+		Jdbi jdbi = Jdbi.create(State.ds);
 		final SerializableTransactionRunner transactionHandler = new SerializableTransactionRunner();
 		jdbi.setTransactionHandler(transactionHandler); //auto retry transactions that deadlock
 		jdbi.installPlugin(new SqlObjectPlugin());
@@ -65,7 +65,13 @@ public interface AudioQualityVoteDao {
 		State.dao=onDemand;
 		return onDemand;
 	}
-
+	
+	static void close() {
+		if (State.ds!=null) {
+			State.ds.close();
+		}
+	}
+	
 	@SqlScript("alter database character set = 'utf8mb4'")
 	@SqlScript("create table if not exists aqv_users" //
 			+ " (uid serial, oauth_provider varchar(254)," //
@@ -208,6 +214,7 @@ public interface AudioQualityVoteDao {
 	void deleteSessionId(@Bind("uid")long uid, @Bind("sessionId")String sessionId);
 
 	class State {
+		protected static HikariDataSource ds;
 		protected static AudioQualityVoteDao dao;
 		protected static String jdbcUrl;
 		protected static Properties properties;
