@@ -49,7 +49,7 @@ public interface AudioQualityVoteDao {
 		config.setMinimumIdle(0);
 		config.setInitializationFailTimeout(0);
 		config.setConnectionTimeout(0);
-		
+		config.setDriverClassName("org.mariadb.jdbc.Driver");
 		config.setJdbcUrl(State.jdbcUrl);
 		config.setUsername(State.user);
 		config.setPassword(State.password);
@@ -62,6 +62,7 @@ public interface AudioQualityVoteDao {
 		jdbi.installPlugin(new SqlObjectPlugin());
 		AudioQualityVoteDao onDemand = jdbi.onDemand(AudioQualityVoteDao.class);
 		onDemand.init();
+		State.dao=onDemand;
 		return onDemand;
 	}
 
