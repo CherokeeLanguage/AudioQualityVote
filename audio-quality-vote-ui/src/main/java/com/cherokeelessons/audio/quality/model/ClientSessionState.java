@@ -59,6 +59,11 @@ public class ClientSessionState {
 	
 	public void clearOauth() {
 		map.remove(OAUTH);
+		for (String key: map.keySet()) {
+			if (key.toLowerCase().contains("oauth")) {
+				map.remove(key);
+			}
+		}
 	}
 	
 	public void oauth(String oauth) {
