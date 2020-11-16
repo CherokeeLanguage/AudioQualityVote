@@ -92,7 +92,7 @@ public class Api {
 		CallbackFuture<Void> cf = new CallbackFuture<>();
 		call(cf).logout(state.uid(), state.sessionId());
 		return cf.future().exceptionally((e)->{
-			state.clearOauth();
+			state.clearCredentials();
 			return null;
 		});
 	}

@@ -57,18 +57,20 @@ public class ClientSessionState {
 		return map.getOrDefault(OAUTH, "");
 	}
 	
-	public void clearOauth() {
+	public void clearCredentials() {
 		map.remove(OAUTH);
 		for (String key: map.keySet()) {
 			if (key.toLowerCase().contains("oauth")) {
 				map.remove(key);
 			}
 		}
+		clearSessionId();
+		clearUid();
 	}
 	
 	public void oauth(String oauth) {
 		if (oauth==null) {
-			clearOauth();
+			clearCredentials();
 			return;
 		}
 		map.put(OAUTH, oauth);

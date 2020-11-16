@@ -63,15 +63,15 @@ public class AppPresenter {
 	}
 
 	private String audioUrl(long vid) {
-		return ServiceRoots.get("api")+RestApi.ApiPaths.audioFile.replace("{vid}", vid+"");
+		return ServiceRoots.get("api") + RestApi.ApiPaths.audioFile.replace("{vid}", vid + "");
 	}
-	
+
 	private String csvUrl() {
-		return ServiceRoots.get("api")+RestApi.ApiPaths.audioQualityVotesCsv;
+		return ServiceRoots.get("api") + RestApi.ApiPaths.audioQualityVotesCsv;
 	}
-	
+
 	public void init() {
-		ServiceRoots.add("api", GWT.getHostPageBaseURL()+"api");
+		ServiceRoots.add("api", GWT.getHostPageBaseURL() + "api");
 		loading.loading(true, "Init");
 		showLogin();
 	}
@@ -81,8 +81,7 @@ public class AppPresenter {
 		view.addAttachHandler((e) -> loading.loading(false));
 		view.lnkLogin((n) -> {
 			AuthRequest req = new AuthRequest("https", "accounts.google.com", "o/oauth2/auth", Consts.CLIENT_ID)
-					.setParameter("scope", "email profile")
-					.setParameter("response_type", "token id_token");
+					.setParameter("scope", "email profile").setParameter("response_type", "token id_token");
 			Auth.get().login(req, new Callback<Map<String, String>, Throwable>() {
 				@Override
 				public void onFailure(Throwable reason) {
@@ -92,14 +91,14 @@ public class AppPresenter {
 				@Override
 				public void onSuccess(Map<String, String> result) {
 					loading.loading(true);
-					api.login(result.get("id_token")).thenAccept((u)->{
+					api.login(result.get("id_token")).thenAccept((u) -> {
 						loading.loading(false);
-						if (u==null) {
+						if (u == null) {
 							DomGlobal.console.log("token verification failed");
 							return;
 						}
 						showMain();
-					}).exceptionally(e->{
+					}).exceptionally(e -> {
 						loading.loading(false);
 						DomGlobal.console.log(e.getMessage());
 						return null;
@@ -113,34 +112,35 @@ public class AppPresenter {
 	private void showMain() {
 		MainMenu view = ui.mainMenuUi();
 		display.replace(view);
-		
-		view.votesSubmitted((dataList)->{
+
+		view.votesSubmitted((dataList) -> {
 			loading.loading(true);
 			api.vote(dataList) //
-				.thenRun(()->loading.loading(false)) //
-				.thenRun(()->getAudio(view));
+					.thenRun(() -> loading.loading(false)) //
+					.thenRun(() -> getAudio(view));
 		});
-		
-		view.lnkVote((v)->getAudio(view));
-		view.lnkLogout((v)->logout());
-		view.lnkDownload((v)->download());
-		view.lnkAbout((v)->view.showAbout());
-		view.lnkStats((v)->showVoteStats(view));
-		view.lnkSettings((v)->showSettings(view));
-		//show about page on first load
+
+		view.lnkVote((v) -> getAudio(view));
+		view.lnkLogout((v) -> logout());
+		view.lnkDownload((v) -> download());
+		view.lnkAbout((v) -> view.showAbout());
+		view.lnkStats((v) -> showVoteStats(view));
+		view.lnkSettings((v) -> showSettings(view));
+		// show about page on first load
 		view.showAbout();
 	}
 
 	private void showSettings(MainMenu view) {
 		Settings settingsView = view.showSettings();
-		settingsView.btnDeleteAccount((v)->{
-			ConfirmDialogControl cdc = showConfirmDialog("DELETE ACCOUNT?", "Deleting your account will also delete your votes. This action cannot be reversed!");
+		settingsView.btnDeleteAccount((v) -> {
+			ConfirmDialogControl cdc = showConfirmDialog("DELETE ACCOUNT?",
+					"Deleting your account will also delete your votes. This action cannot be reversed!");
 			CompletableFuture<Boolean> cf = cdc.cf;
-			cf.thenAccept((d)->{
+			cf.thenAccept((d) -> {
 				if (d) {
 					loading.loading(true);
-					
-					api.deleteSelf().thenRun(()->DomGlobal.location.reload(true));
+					api.deleteSelf().thenRun(() -> DomGlobal.location.reload(true));
+					session.clearCredentials();
 				}
 				cdc.dialog.close();
 			});
@@ -151,60 +151,61 @@ public class AppPresenter {
 		public MaterialDialog dialog;
 		public CompletableFuture<Boolean> cf;
 	}
+
 	private ConfirmDialogControl showConfirmDialog(String title, String message) {
 		MaterialDialog md = new MaterialDialog();
 		md.setTextAlign(TextAlign.CENTER);
 		Heading heading = new Heading(HeadingSize.H4);
 		heading.setText(title);
 		md.add(heading);
-		
+
 		Text text = new Text();
 		text.setText(message);
-		
+
 		MaterialColumn messageColumn = new MaterialColumn();
 		messageColumn.setTextAlign(TextAlign.CENTER);
 		messageColumn.add(text);
-		
+
 		MaterialRow messageRow = new MaterialRow();
 		messageRow.add(messageColumn);
-		
+
 		md.add(messageRow);
 		md.add(new Hr());
-		
+
 		MaterialButton yes = new MaterialButton("YES", IconType.CHECK);
 		MaterialColumn yesColumn = new MaterialColumn(12, 6, 4);
 		yesColumn.add(yes);
-		
+
 		MaterialButton no = new MaterialButton("NO", IconType.CANCEL);
 		MaterialColumn noColumn = new MaterialColumn(12, 6, 4);
 		noColumn.add(no);
-		
+
 		MaterialRow btnRow = new MaterialRow();
 		btnRow.add(yesColumn);
 		btnRow.add(noColumn);
-		
+
 		md.add(btnRow);
-		
+
 		CompletableFuture<Boolean> cf = new CompletableFuture<Boolean>();
-		
+
 		RootPanel.get().add(md);
 		md.open();
-		
-		yes.addClickHandler((e)->cf.complete(true));
-		no.addClickHandler((e)->cf.complete(false));
-		
+
+		yes.addClickHandler((e) -> cf.complete(true));
+		no.addClickHandler((e) -> cf.complete(false));
+
 		ConfirmDialogControl cdc = new ConfirmDialogControl();
-		cdc.dialog=md;
-		cdc.cf=cf;
+		cdc.dialog = md;
+		cdc.cf = cf;
 		return cdc;
 	}
 
 	private void showVoteStats(MainMenu view) {
 		loading.loading(true);
 		CompletableFuture<UserVoteCount> fMyVotes = api.myVotes();
-		fMyVotes.thenAccept((myVotes)->{
+		fMyVotes.thenAccept((myVotes) -> {
 			CompletableFuture<TopVoters> fTopVoters = api.topVoters();
-			fTopVoters.thenAccept((topVoters)->{
+			fTopVoters.thenAccept((topVoters) -> {
 				loading.loading(false);
 				view.showStats(topVoters, myVotes);
 			});
@@ -217,16 +218,16 @@ public class AppPresenter {
 
 	private void logout() {
 		loading.loading(true);
-		api.logout().thenAccept((v)->{
-			session.clear();
+		api.logout().thenAccept((v) -> {
+			session.clearCredentials();
 			DomGlobal.location.reload(true);
 		});
 	}
 
 	private void getAudio(MainMenu view) {
 		loading.loading(true);
-		api.pendingAudio().thenAccept(list-> {
-			list.forEach((item)->item.setUrl(audioUrl(item.getVid())));
+		api.pendingAudio().thenAccept(list -> {
+			list.forEach((item) -> item.setUrl(audioUrl(item.getVid())));
 			view.setAudioDataList(list);
 			loading.loading(false);
 		});
