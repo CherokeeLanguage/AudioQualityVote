@@ -95,5 +95,13 @@ public class Api {
 			return null;
 		});
 	}
+
+	public CompletableFuture<Void> deleteSelf() {
+		CallbackFuture<Void> cf = new CallbackFuture<>();
+		call(cf).deleteSelf(state.uid(), state.sessionId());
+		return cf.future().exceptionally((e)->{
+			return null;
+		});
+	}
 	
 }

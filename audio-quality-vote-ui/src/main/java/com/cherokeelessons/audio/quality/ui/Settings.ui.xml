@@ -1,0 +1,14 @@
+<!DOCTYPE ui:UiBinder SYSTEM "http://dl.google.com/gwt/DTD/xhtml.ent">
+<ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
+	xmlns:g="urn:import:com.google.gwt.user.client.ui"
+	xmlns:m="urn:import:gwt.material.design.client.ui"
+	xmlns:h="urn:import:gwt.material.design.client.ui.html">
+	<ui:style>
+	
+	</ui:style>
+	<m:MaterialRow>
+		<m:MaterialColumn grid="s12 m6 l4" offset="s0 m0 l0">
+			<m:MaterialButton ui:field="btnDeleteAccount" text="DELETE ACCOUNT" />
+		</m:MaterialColumn>
+	</m:MaterialRow>
+</ui:UiBinder> 

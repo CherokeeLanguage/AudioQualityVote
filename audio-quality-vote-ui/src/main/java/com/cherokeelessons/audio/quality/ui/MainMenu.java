@@ -53,6 +53,12 @@ public class MainMenu extends Composite implements UiView {
 	public HandlerRegistration lnkDownload(Handler<Void> handler) {
 		return lnkDownload.addClickHandler((e)->handler.handle(null));
 	}
+	
+	@UiField
+	protected MaterialLink lnkSettings;
+	public HandlerRegistration lnkSettings(Handler<Void> handler) {
+		return lnkSettings.addClickHandler((e)->handler.handle(null));
+	}
 
 	@UiField
 	protected MaterialLink lnkVote;
@@ -241,5 +247,12 @@ public class MainMenu extends Composite implements UiView {
 	public void showAbout() {
 		container.clear();
 		container.add(new AboutDisplay());
+	}
+
+	public Settings showSettings() {
+		Settings settingsView = new Settings();
+		container.clear();
+		container.add(settingsView);
+		return settingsView;
 	}
 }

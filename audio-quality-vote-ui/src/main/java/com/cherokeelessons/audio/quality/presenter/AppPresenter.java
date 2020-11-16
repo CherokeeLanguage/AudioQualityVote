@@ -1,10 +1,7 @@
 package com.cherokeelessons.audio.quality.presenter;
 
-import java.awt.Container;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.inject.Inject;
 
@@ -21,10 +18,22 @@ import com.cherokeelessons.audio.quality.shared.UserVoteCount;
 import com.cherokeelessons.audio.quality.ui.Loading;
 import com.cherokeelessons.audio.quality.ui.Login;
 import com.cherokeelessons.audio.quality.ui.MainMenu;
+import com.cherokeelessons.audio.quality.ui.Settings;
 import com.google.gwt.core.client.Callback;
 import com.google.gwt.core.client.GWT;
+import com.google.gwt.user.client.ui.RootPanel;
 
 import elemental2.dom.DomGlobal;
+import gwt.material.design.client.constants.HeadingSize;
+import gwt.material.design.client.constants.IconType;
+import gwt.material.design.client.constants.TextAlign;
+import gwt.material.design.client.ui.MaterialButton;
+import gwt.material.design.client.ui.MaterialColumn;
+import gwt.material.design.client.ui.MaterialDialog;
+import gwt.material.design.client.ui.MaterialRow;
+import gwt.material.design.client.ui.html.Heading;
+import gwt.material.design.client.ui.html.Hr;
+import gwt.material.design.client.ui.html.Text;
 import io.github.freddyboucher.gwt.oauth2.client.Auth;
 import io.github.freddyboucher.gwt.oauth2.client.AuthRequest;
 
@@ -117,8 +126,76 @@ public class AppPresenter {
 		view.lnkDownload((v)->download());
 		view.lnkAbout((v)->view.showAbout());
 		view.lnkStats((v)->showVoteStats(view));
+		view.lnkSettings((v)->showSettings(view));
 		//show about page on first load
 		view.showAbout();
+	}
+
+	private void showSettings(MainMenu view) {
+		Settings settingsView = view.showSettings();
+		settingsView.btnDeleteAccount((v)->{
+			ConfirmDialogControl cdc = showConfirmDialog("DELETE ACCOUNT?", "Deleting your account will also delete your votes. This action cannot be reversed!");
+			CompletableFuture<Boolean> cf = cdc.cf;
+			cf.thenAccept((d)->{
+				if (d) {
+					loading.loading(true);
+					api.deleteSelf().thenRun(()->DomGlobal.location.reload(true));
+				}
+				cdc.dialog.close();
+			});
+		});
+	}
+
+	static class ConfirmDialogControl {
+		public MaterialDialog dialog;
+		public CompletableFuture<Boolean> cf;
+	}
+	private ConfirmDialogControl showConfirmDialog(String title, String message) {
+		MaterialDialog md = new MaterialDialog();
+		md.setTextAlign(TextAlign.CENTER);
+		Heading heading = new Heading(HeadingSize.H4);
+		heading.setText(title);
+		md.add(heading);
+		
+		Text text = new Text();
+		text.setText(message);
+		
+		MaterialColumn messageColumn = new MaterialColumn();
+		messageColumn.setTextAlign(TextAlign.CENTER);
+		messageColumn.add(text);
+		
+		MaterialRow messageRow = new MaterialRow();
+		messageRow.add(messageColumn);
+		
+		md.add(messageRow);
+		md.add(new Hr());
+		
+		MaterialButton yes = new MaterialButton("YES", IconType.CHECK);
+		MaterialColumn yesColumn = new MaterialColumn(12, 6, 4);
+		yesColumn.add(yes);
+		
+		MaterialButton no = new MaterialButton("NO", IconType.CANCEL);
+		MaterialColumn noColumn = new MaterialColumn(12, 6, 4);
+		noColumn.add(no);
+		
+		MaterialRow btnRow = new MaterialRow();
+		btnRow.add(yesColumn);
+		btnRow.add(noColumn);
+		
+		md.add(btnRow);
+		
+		CompletableFuture<Boolean> cf = new CompletableFuture<Boolean>();
+		
+		RootPanel.get().add(md);
+		md.open();
+		
+		yes.addClickHandler((e)->cf.complete(true));
+		no.addClickHandler((e)->cf.complete(false));
+		
+		ConfirmDialogControl cdc = new ConfirmDialogControl();
+		cdc.dialog=md;
+		cdc.cf=cf;
+		return cdc;
 	}
 
 	private void showVoteStats(MainMenu view) {

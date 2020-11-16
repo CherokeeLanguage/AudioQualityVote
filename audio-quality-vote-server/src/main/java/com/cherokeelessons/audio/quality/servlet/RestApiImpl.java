@@ -262,4 +262,12 @@ public class RestApiImpl implements RestApi {
 		);
 		return topVoters;
 	}
+
+	@Override
+	public void deleteSelf(Long uid, String sessionId) {
+		if (!isSessionId(uid, sessionId)) {
+			return;
+		}
+		dao().deleteUserById(uid);
+	}
 }

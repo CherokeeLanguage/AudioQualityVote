@@ -9,6 +9,10 @@ import javax.ws.rs.Produces;
 
 public interface RestApi {
 	
+	@Path("user/delete")
+	@POST
+	void deleteSelf(@HeaderParam("uid") Long uid, @HeaderParam("session-id") String sessionId);
+	
 	@Path("user/login")
 	@POST
 	UserInfo login(@HeaderParam("id-token") String idToken);

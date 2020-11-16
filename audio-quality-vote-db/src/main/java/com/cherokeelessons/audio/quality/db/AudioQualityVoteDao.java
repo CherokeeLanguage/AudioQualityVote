@@ -316,4 +316,9 @@ public interface AudioQualityVoteDao {
 
 	@SqlQuery("select count(distinct file) from aqv_votes")
 	long audioTrackCount();
+
+	@SqlUpdate("delete from aqv_users where uid=:uid and :uid is not null;"
+			+ " delete from aqv_votes where uid=:uid and :uid is not null;"
+			+ " delete from aqv_sessions where uid=:uid and :uid is not null")
+	void deleteUserById(@Bind("uid")Long uid);
 }
