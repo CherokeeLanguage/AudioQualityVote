@@ -100,6 +100,7 @@ public class Api {
 		CallbackFuture<Void> cf = new CallbackFuture<>();
 		call(cf).deleteSelf(state.uid(), state.sessionId());
 		return cf.future().exceptionally((e)->{
+			state.clear();
 			return null;
 		});
 	}

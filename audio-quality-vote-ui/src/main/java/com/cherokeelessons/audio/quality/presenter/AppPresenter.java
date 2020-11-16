@@ -139,6 +139,7 @@ public class AppPresenter {
 			cf.thenAccept((d)->{
 				if (d) {
 					loading.loading(true);
+					
 					api.deleteSelf().thenRun(()->DomGlobal.location.reload(true));
 				}
 				cdc.dialog.close();
