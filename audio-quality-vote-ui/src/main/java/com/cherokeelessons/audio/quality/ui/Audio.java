@@ -16,7 +16,7 @@ public class Audio extends MaterialWidget {
 	protected String type = SourceAudio.Type.MPEG.name();
 	protected String src;
 	protected String alt;
-	protected String preload = Preload.NONE.name();
+	protected String preload = Preload.METADATA.name();
 
 	public boolean isControls() {
 		return controls;
