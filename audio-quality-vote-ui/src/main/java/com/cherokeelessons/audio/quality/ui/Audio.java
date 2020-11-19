@@ -24,6 +24,7 @@ public class Audio extends MaterialWidget {
 
 	public void setControls(boolean controls) {
 		this.controls = controls;
+		element.setControls(controls);
 	}
 
 	public String getPreload() {
@@ -32,6 +33,7 @@ public class Audio extends MaterialWidget {
 
 	public void setPreload(String preload) {
 		this.preload = preload;
+		element.setPreload(preload);
 	}
 
 	public static enum Preload {
