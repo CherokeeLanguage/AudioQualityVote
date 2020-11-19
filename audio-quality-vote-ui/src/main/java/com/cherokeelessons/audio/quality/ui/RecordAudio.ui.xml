@@ -1,0 +1,46 @@
+<!DOCTYPE ui:UiBinder SYSTEM "http://dl.google.com/gwt/DTD/xhtml.ent">
+<ui:UiBinder xmlns:ui="urn:ui:com.google.gwt.uibinder"
+	xmlns:g="urn:import:com.google.gwt.user.client.ui"
+	xmlns:m="urn:import:gwt.material.design.client.ui"
+	xmlns:h="urn:import:gwt.material.design.client.ui.html"
+	xmlns:a="urn:import:com.cherokeelessons.audio.quality.ui">
+	<ui:style>
+	
+	</ui:style>
+	<m:MaterialContainer>
+	<m:MaterialRow margin="16">
+	<m:MaterialLabel text="TEXT FOR RECORDING" fontWeight="BOLD" fontSize="125pct"></m:MaterialLabel>
+	</m:MaterialRow>
+	<h:Hr margin="16"></h:Hr>
+		<m:MaterialRow>
+			<m:MaterialColumn grid="s12 m6 l4">
+				<a:Audio ui:field="audio"></a:Audio>
+			</m:MaterialColumn>
+		</m:MaterialRow>
+		<m:MaterialRow>
+			<m:MaterialColumn grid="s4 m3 l2">
+				<m:MaterialButton iconType="RECORD_VOICE_OVER"
+					iconPosition="LEFT" ui:field="btnRecordStart" text="START"></m:MaterialButton>
+			</m:MaterialColumn>
+			<m:MaterialColumn grid="s4 m3 l2">
+				<m:MaterialButton iconType="CANCEL"
+					iconPosition="LEFT" ui:field="btnRecordStop" text="STOP"></m:MaterialButton>
+			</m:MaterialColumn>
+			<m:MaterialColumn grid="s4 m3 l2">
+				<m:MaterialButton iconType="REPLAY"
+					iconPosition="LEFT" ui:field="btnRecordPlayback" text="PLAY"></m:MaterialButton>
+			</m:MaterialColumn>
+		</m:MaterialRow>
+		<h:Hr margin="16"></h:Hr>
+		<m:MaterialRow>
+			<m:MaterialColumn grid="s4 m3 l2">
+				<m:MaterialButton iconType="CLOUD_UPLOAD" iconPosition="LEFT" ui:field="btnSubmit"
+					text="SUBMIT"></m:MaterialButton>
+			</m:MaterialColumn>
+			<m:MaterialColumn grid="s4 m3 l2">
+				<m:MaterialButton iconType="CANCEL" iconPosition="LEFT" ui:field="btnCancel"
+					text="CANCEL"></m:MaterialButton>
+			</m:MaterialColumn>
+		</m:MaterialRow>
+	</m:MaterialContainer>
+</ui:UiBinder>

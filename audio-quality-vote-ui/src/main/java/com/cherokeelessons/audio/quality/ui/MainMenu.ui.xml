@@ -17,10 +17,12 @@
 				iconType="CLOUD_DOWNLOAD" iconPosition="LEFT" text="DOWNLOAD VOTES" />
 			<m:MaterialLink ui:field="lnkVote"
 				iconType="FORMAT_LIST_BULLETED" iconPosition="LEFT" text="VOTE" />
-			<m:MaterialLink ui:field="lnkStats" iconType="EQUALIZER"
-				iconPosition="LEFT" text="STATS" />
-			<m:MaterialLink ui:field="lnkSettings" iconType="SETTINGS"
-				iconPosition="LEFT" text="SETTINGS" />
+			<m:MaterialLink ui:field="lnkStats"
+				iconType="EQUALIZER" iconPosition="LEFT" text="STATS" />
+			<m:MaterialLink ui:field="lnkRecord"
+				iconType="SETTINGS_VOICE" iconPosition="LEFT" text="RECORD" />
+			<m:MaterialLink ui:field="lnkSettings"
+				iconType="SETTINGS" iconPosition="LEFT" text="SETTINGS" />
 			<m:MaterialLink ui:field="lnkAbout" iconType="INFO"
 				iconPosition="LEFT" text="ABOUT" />
 			<m:MaterialLink ui:field="lnkLogout"

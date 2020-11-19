@@ -11,6 +11,7 @@ import com.cherokeelessons.audio.quality.dagger.UiComponents;
 import com.cherokeelessons.audio.quality.model.Api;
 import com.cherokeelessons.audio.quality.model.ClientSessionState;
 import com.cherokeelessons.audio.quality.model.Display;
+import com.cherokeelessons.audio.quality.model.Handler;
 import com.cherokeelessons.audio.quality.shared.Consts;
 import com.cherokeelessons.audio.quality.shared.RestApi;
 import com.cherokeelessons.audio.quality.shared.TopVoters;
@@ -128,6 +129,11 @@ public class AppPresenter {
 		view.lnkSettings((v) -> showSettings(view));
 		// show about page on first load
 		view.showAbout();
+		view.lnkRecord((v)->showRecord(view));
+	}
+
+	private void showRecord(MainMenu view) {
+		view.showRecordView();
 	}
 
 	private void showSettings(MainMenu view) {

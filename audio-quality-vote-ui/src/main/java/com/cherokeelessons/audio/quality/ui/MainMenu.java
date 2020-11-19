@@ -49,6 +49,12 @@ public class MainMenu extends Composite implements UiView {
 	}
 	
 	@UiField
+	protected MaterialLink lnkRecord;
+	public HandlerRegistration lnkRecord(Handler<Void> handler) {
+		return lnkRecord.addClickHandler((e)->handler.handle(null));
+	}
+	
+	@UiField
 	protected MaterialLink lnkDownload;
 	public HandlerRegistration lnkDownload(Handler<Void> handler) {
 		return lnkDownload.addClickHandler((e)->handler.handle(null));
@@ -254,5 +260,12 @@ public class MainMenu extends Composite implements UiView {
 		container.clear();
 		container.add(settingsView);
 		return settingsView;
+	}
+
+	public RecordAudio showRecordView() {
+		container.clear();
+		RecordAudio recView = new RecordAudio();
+		container.add(recView);
+		return recView;
 	}
 }
