@@ -170,6 +170,7 @@ public class RestApiImpl implements RestApi {
 		}
 		if( Boolean.TRUE == dao().isSessionId(uid, sessionId)) {
 			dao().updateLastSeen(uid, sessionId);
+			dao().deleteOldSessions();
 			return true;
 		}
 		return false;

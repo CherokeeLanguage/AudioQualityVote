@@ -2,7 +2,6 @@ package com.cherokeelessons.audio.quality.db;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -15,8 +14,6 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import javax.management.RuntimeErrorException;
 
 import org.apache.commons.io.IOUtils;
 import org.jdbi.v3.core.Jdbi;
@@ -402,5 +399,8 @@ public interface AudioQualityVoteDao extends SqlObject {
 
 	@SqlUpdate("update aqv_sessions set last_seen=NOW() where uid=:uid AND session=:session")
 	void updateLastSeen(@Bind("uid")Long uid, @Bind("session") String sessionId);
+	
+	@SqlUpdate("delete from aqv_sessions where last_seen < NOW() - INTERVAL 1 WEEK")
+	void deleteOldSessions();
 	
 }
