@@ -3,6 +3,7 @@ package com.cherokeelessons.audio.quality.db;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -14,25 +15,32 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.jdbi.v3.core.Handle;
+import org.jdbi.v3.core.HandleCallback;
+import org.jdbi.v3.core.HandleConsumer;
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.core.transaction.SerializableTransactionRunner;
+import org.jdbi.v3.sqlobject.Handler;
 import org.jdbi.v3.sqlobject.SqlObjectPlugin;
 import org.jdbi.v3.sqlobject.config.KeyColumn;
 import org.jdbi.v3.sqlobject.config.RegisterBeanMapper;
 import org.jdbi.v3.sqlobject.config.ValueColumn;
 import org.jdbi.v3.sqlobject.customizer.Bind;
+import org.jdbi.v3.sqlobject.customizer.BindBean;
+import org.jdbi.v3.sqlobject.statement.GetGeneratedKeys;
 import org.jdbi.v3.sqlobject.statement.SqlQuery;
 import org.jdbi.v3.sqlobject.statement.SqlScript;
 import org.jdbi.v3.sqlobject.statement.SqlUpdate;
 import org.jdbi.v3.sqlobject.transaction.Transaction;
 import org.mariadb.jdbc.MariaDbPoolDataSource;
 
+import com.cherokeelessons.audio.quality.shared.AudioBytesInfo;
 import com.cherokeelessons.audio.quality.shared.AudioData;
 import com.cherokeelessons.audio.quality.shared.VoteResult;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
-public interface AudioQualityVoteDao {
+public interface AudioQualityVoteDao extends HandleCallback<AudioQualityVoteDao, Exception>, HandleConsumer<Exception> {
 	
 	int MIN_VOTES_FILTER = 4;
 
@@ -110,7 +118,52 @@ public interface AudioQualityVoteDao {
 	@SqlScript("create index if not exists txt on aqv_votes(txt(8))")
 	@SqlScript("create index if not exists modified on aqv_votes(modified)")
 	@SqlScript("create index if not exists created on aqv_votes(created)")
+	
+	@SqlScript("create table if not exists aqv_audio" //
+			+ " (aid serial," //
+			+ " uid bigint unsigned," //
+			+ " file text," //
+			+ " txt text,"
+			+ " mime text,"
+			+ " data longblob,"
+			+ " modified datetime on update NOW()," //
+			+ " created datetime default NOW())") //
+	@SqlScript("create index if not exists uid on aqv_audio(uid)")
+	@SqlScript("create index if not exists file on aqv_audio(file(32))")
+	@SqlScript("create index if not exists txt on aqv_audio(txt(8))")
+	@SqlScript("create index if not exists mime on aqv_audio(mime(16))")
+	@SqlScript("create index if not exists modified on aqv_audio(modified)")
+	@SqlScript("create index if not exists created on aqv_audio(created)")
 	void init();
+	
+	@SqlQuery("select data from aqv_audio where aid=:aid")
+	InputStream audioBytesStream(@Bind("aid")long aid);
+	
+	@SqlQuery("select data from aqv_audio where aid=:aid")
+	byte[] audioBytes(@Bind("aid")long aid);
+	
+	@SqlUpdate("delete from aqv_audio where aid=:aid")
+	void deleteAudioBytes(@Bind("aid")long aid);
+	
+	@SqlUpdate("delete from aqv_audio where uid=:uid")
+	void deleteAudioBytesByUid(@Bind("uid")long uid);
+	
+	@SqlQuery("select aid, uid, file, txt, mime, modified, created" //
+			+ " from aqv_audio where aid=:aid")
+	@RegisterBeanMapper(AudioBytesInfo.class)
+	AudioBytesInfo audioBytesInfo(@Bind("aid")long aid);
+	
+	@SqlUpdate("insert into aqv_audio (uid, file, txt, mime)"
+			+ " values"
+			+ " (:uid, :file, :txt, :mime)")
+	@GetGeneratedKeys
+	long addAudioBytesInfo(@BindBean AudioBytesInfo info);
+	
+	@SqlUpdate("update aqv_audio set data=:data where aid=:aid")
+	void setAudioBytesData(@Bind("data") byte[] data);
+	
+	@SqlUpdate("update aqv_audio set data=:data where aid=:aid")
+	void setAudioBytesData(@Bind("data") InputStream data);
 	
 	@SqlQuery("select *, file as audioFile, txt as `text`" //
 			+ " from aqv_votes where" //
@@ -321,4 +374,5 @@ public interface AudioQualityVoteDao {
 			+ " delete from aqv_votes where uid=:uid and :uid is not null;"
 			+ " delete from aqv_sessions where uid=:uid and :uid is not null")
 	void deleteUserById(@Bind("uid")Long uid);
+	
 }
