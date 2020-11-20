@@ -23,7 +23,6 @@ compileTestJava.options.encoding = 'UTF-8'
 	jvmArgs = ['-Dfile.encoding=UTF-8', '-Xmx512M', '-Ddebug=true' ]
 }
  
- 
 dependencies {
 	implementation project(":audio-quality-vote-shared")
 	implementation project(":audio-quality-vote-db")

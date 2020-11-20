@@ -17,6 +17,8 @@ dependencies {
 	implementation "org.jdbi:jdbi3-sqlobject:3.17.0"
 	implementation 'org.mariadb.jdbc:mariadb-java-client:2.7.0'
 	implementation "com.zaxxer:HikariCP:3.4.5"
+	//for streaming DB ops
+	implementation group: 'commons-io', name: 'commons-io', version: '2.8.0'
 }
 
 eclipse {

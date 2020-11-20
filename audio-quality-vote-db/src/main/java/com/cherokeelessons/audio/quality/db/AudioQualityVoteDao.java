@@ -2,12 +2,13 @@ package com.cherokeelessons.audio.quality.db;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -15,12 +16,12 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.jdbi.v3.core.Handle;
-import org.jdbi.v3.core.HandleCallback;
-import org.jdbi.v3.core.HandleConsumer;
+import javax.management.RuntimeErrorException;
+
+import org.apache.commons.io.IOUtils;
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.core.transaction.SerializableTransactionRunner;
-import org.jdbi.v3.sqlobject.Handler;
+import org.jdbi.v3.sqlobject.SqlObject;
 import org.jdbi.v3.sqlobject.SqlObjectPlugin;
 import org.jdbi.v3.sqlobject.config.KeyColumn;
 import org.jdbi.v3.sqlobject.config.RegisterBeanMapper;
@@ -32,7 +33,6 @@ import org.jdbi.v3.sqlobject.statement.SqlQuery;
 import org.jdbi.v3.sqlobject.statement.SqlScript;
 import org.jdbi.v3.sqlobject.statement.SqlUpdate;
 import org.jdbi.v3.sqlobject.transaction.Transaction;
-import org.mariadb.jdbc.MariaDbPoolDataSource;
 
 import com.cherokeelessons.audio.quality.shared.AudioBytesInfo;
 import com.cherokeelessons.audio.quality.shared.AudioData;
@@ -40,7 +40,7 @@ import com.cherokeelessons.audio.quality.shared.VoteResult;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
-public interface AudioQualityVoteDao extends HandleCallback<AudioQualityVoteDao, Exception>, HandleConsumer<Exception> {
+public interface AudioQualityVoteDao extends SqlObject {
 	
 	int MIN_VOTES_FILTER = 4;
 
@@ -136,6 +136,12 @@ public interface AudioQualityVoteDao extends HandleCallback<AudioQualityVoteDao,
 	@SqlScript("create index if not exists created on aqv_audio(created)")
 	void init();
 	
+	default void audioBytesStream(long aid, OutputStream os) throws IOException {
+		useHandle((h)->{
+			IOUtils.copy(audioBytesStream(aid), os);
+		});
+	}
+	
 	@SqlQuery("select data from aqv_audio where aid=:aid")
 	InputStream audioBytesStream(@Bind("aid")long aid);
 	
@@ -160,10 +166,29 @@ public interface AudioQualityVoteDao extends HandleCallback<AudioQualityVoteDao,
 	long addAudioBytesInfo(@BindBean AudioBytesInfo info);
 	
 	@SqlUpdate("update aqv_audio set data=:data where aid=:aid")
-	void setAudioBytesData(@Bind("data") byte[] data);
+	void setAudioBytesData(@Bind("aid")long aid, @Bind("data") byte[] data);
 	
-	@SqlUpdate("update aqv_audio set data=:data where aid=:aid")
-	void setAudioBytesData(@Bind("data") InputStream data);
+	default void setAudioBytesData(long aid, InputStream data) {
+		useHandle(h->{
+			h.createUpdate("update aqv_audio set data=:data where aid=:aid") //
+			.bind("aid", aid)
+			.bind("data", data)
+			.execute();
+		});
+	}
+	
+	default void setAudioBytesData(long aid, File data) {
+		try (FileInputStream fis = new FileInputStream(data)) {
+			useHandle(h->{
+				h.createUpdate("update aqv_audio set data=:data where aid=:aid") //
+				.bind("aid", aid)
+				.bind("data", fis)
+				.execute();
+			});
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
 	
 	@SqlQuery("select *, file as audioFile, txt as `text`" //
 			+ " from aqv_votes where" //
