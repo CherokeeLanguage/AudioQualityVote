@@ -399,5 +399,8 @@ public interface AudioQualityVoteDao extends SqlObject {
 			+ " delete from aqv_votes where uid=:uid and :uid is not null;"
 			+ " delete from aqv_sessions where uid=:uid and :uid is not null")
 	void deleteUserById(@Bind("uid")Long uid);
+
+	@SqlUpdate("update aqv_sessions set last_seen=NOW() where uid=:uid AND session=:session")
+	void updateLastSeen(@Bind("uid")Long uid, @Bind("session") String sessionId);
 	
 }

@@ -168,7 +168,11 @@ public class RestApiImpl implements RestApi {
 		if (uid == null || sessionId == null) {
 			return false;
 		}
-		return dao().isSessionId(uid, sessionId);
+		if( Boolean.TRUE == dao().isSessionId(uid, sessionId)) {
+			dao().updateLastSeen(uid, sessionId);
+			return true;
+		}
+		return false;
 	}
 
 	@Override
