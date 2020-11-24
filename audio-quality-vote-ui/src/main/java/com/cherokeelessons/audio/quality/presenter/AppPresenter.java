@@ -154,7 +154,7 @@ public class AppPresenter {
 		Settings settingsView = view.showSettings();
 		settingsView.btnDeleteAccount((v) -> {
 			ConfirmDialogControl cdc = showConfirmDialog("DELETE ACCOUNT?",
-					"Deleting your account will also delete your votes. This action cannot be reversed!");
+					"Deleting your account will also delete your votes and recorded audio tracks. This action cannot be reversed!");
 			CompletableFuture<Boolean> cf = cdc.cf;
 			cf.thenAccept((d) -> {
 				if (d) {
