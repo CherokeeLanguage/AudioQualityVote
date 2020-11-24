@@ -6,10 +6,12 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.Type;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.Blob;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -19,10 +21,14 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 import org.apache.commons.io.IOUtils;
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.core.argument.InputStreamArgument;
+import org.jdbi.v3.core.result.ResultProducer;
+import org.jdbi.v3.core.statement.Query;
+import org.jdbi.v3.core.statement.StatementContext;
 import org.jdbi.v3.core.transaction.SerializableTransactionRunner;
 import org.jdbi.v3.sqlobject.SqlObject;
 import org.jdbi.v3.sqlobject.SqlObjectPlugin;
@@ -143,15 +149,26 @@ public interface AudioQualityVoteDao extends SqlObject {
 	void init();
 	
 	default void audioBytesStream(long aid, OutputStream os) throws IOException {
-		try (InputStream bs = new ByteArrayInputStream(audioBytes(aid))) {
+		AudioBytesObject data = audioBytesObject(aid);
+		try (InputStream bs = new ByteArrayInputStream(data.getData())) {
 			IOUtils.copy(bs, os);
-		} catch (Exception e) {
-			throw new IllegalStateException(e);
 		}
 	}
 	
 	@SqlQuery("select data from aqv_audio where aid=:aid")
 	byte[] audioBytes(@Bind("aid")long aid);
+	class AudioBytesObject { //needed for hacky work around to get binary data out of DB
+		private byte[] data;
+		public byte[] getData() {
+			return data;
+		}
+		public void setData(byte[] data) {
+			this.data = data;
+		}
+	}
+	@RegisterBeanMapper(AudioBytesObject.class)
+	@SqlQuery("select data from aqv_audio where aid=:aid")
+	AudioBytesObject audioBytesObject(@Bind("aid")long aid);
 	
 	@SqlUpdate("delete from aqv_audio where aid=:aid")
 	void deleteAudioBytes(@Bind("aid")long aid);
