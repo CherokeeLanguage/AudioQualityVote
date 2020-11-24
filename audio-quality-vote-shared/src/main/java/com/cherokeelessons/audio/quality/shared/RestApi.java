@@ -49,12 +49,12 @@ public interface RestApi {
 	@Produces("audio/fetch")
 	@Path(ApiPaths.AUDIO_FILE)
 	@GET
-	Object audioGet(@PathParam("vid") String id);
+	Object audioGet(@PathParam("aid") String aid);
 
-	@Path("audio/details/{vid}")
+	@Path("audio/details/{aid}")
 	@GET
 	AudioData audioData(@HeaderParam("uid") Long uid, @HeaderParam("session-id") String sessionId,
-			@PathParam("vid") Long vid);
+			@PathParam("aid") Long aid);
 
 	@Path("audio/vote/{vid}/{bad}/{poor}/{good}")
 	@POST
@@ -95,7 +95,7 @@ public interface RestApi {
 	Total audioTrackCount(@HeaderParam("uid") Long uid, @HeaderParam("session-id") String sessionId);
 
 	interface ApiPaths {
-		String AUDIO_FILE = "audio/file/{vid}";
+		String AUDIO_FILE = "audio/file/{aid}";
 		String VOTES_CSV = "audio/votes/list/AudioQualityVotes.csv";
 		String AUDIO_PUT = "audio/user/put";
 	}

@@ -63,8 +63,8 @@ public class AppPresenter {
 		//
 	}
 
-	private String audioUrl(long vid) {
-		return ServiceRoots.get("api") + RestApi.ApiPaths.AUDIO_FILE.replace("{vid}", vid + "");
+	private String audioUrl(long aid) {
+		return ServiceRoots.get("api") + RestApi.ApiPaths.AUDIO_FILE.replace("{aid}", aid + "");
 	}
 
 	private String csvUrl() {
@@ -235,7 +235,7 @@ public class AppPresenter {
 	private void getAudio(MainMenu view) {
 		loading.loading(true);
 		api.pendingAudio().thenAccept(list -> {
-			list.forEach((item) -> item.setUrl(audioUrl(item.getVid())));
+			list.forEach((item) -> item.setUrl(audioUrl(item.getAid())));
 			view.setAudioDataList(list);
 			loading.loading(false);
 		});

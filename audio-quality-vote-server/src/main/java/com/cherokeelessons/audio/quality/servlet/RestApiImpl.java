@@ -1,7 +1,5 @@
 package com.cherokeelessons.audio.quality.servlet;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.security.GeneralSecurityException;
@@ -20,7 +18,6 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
 import com.cherokeelessons.audio.quality.db.AudioQualityVoteDao;
-import com.cherokeelessons.audio.quality.db.AudioQualityVoteFiles;
 import com.cherokeelessons.audio.quality.shared.AudioBytesInfo;
 import com.cherokeelessons.audio.quality.shared.AudioData;
 import com.cherokeelessons.audio.quality.shared.AudioDataList;
@@ -83,9 +80,9 @@ public class RestApiImpl implements RestApi {
 		String email = token.getPayload().getEmail();
 		dao().addUser("Google", oauthId, email);
 		dao().updateEmail("Google", oauthId, email);
-		long uid = dao().uid(email);
+		long uid = dao().uidByEmail(email);
 		dao().updateLastLogin(uid);
-		dao().scanForNewFiles(uid);
+		dao().scanForNewEntries(uid);
 		UserInfo info = new UserInfo();
 		info.setUid(uid);
 		info.setEmail(email);
@@ -107,38 +104,38 @@ public class RestApiImpl implements RestApi {
 
 	@Override
 	public Response audioGet(String id) {
-		int vid;
+		int aid;
 		try {
-			vid = Integer.parseInt(id);
+			aid = Integer.parseInt(id);
 		} catch (NumberFormatException e) {
 			return Response.status(Status.NOT_FOUND).build();
 		}
-		AudioData data = dao().audioData(vid);
+		AudioBytesInfo data = dao().audioBytesInfo(aid);
 		if (data == null) {
-			System.err.println("No entry in db for vid " + vid);
+			System.err.println("No entry in db for aid " + aid);
 			return Response.status(Status.NOT_FOUND).build();
 		}
-		File file = new File(AudioQualityVoteFiles.getFolder(), data.getAudioFile());
-		if (!file.exists()) {
-			System.err.println("No file found for vid " + vid);
-			System.out.println(file.getAbsolutePath());
+		if (!dao().audioBytesInfoHasData(aid)) {
+			System.err.println("Entry in db for aid " + aid+" does not have audio data attached.");
 			return Response.status(Status.NOT_FOUND).build();
 		}
+		
 		try {
 			response.setHeader("Cache-Control", "public,max-age=" + (60 * 60 * 24));
-			return Response.ok(new FileInputStream(file)).build();
+			dao().audioBytesStream(aid, response.getOutputStream());
+			return Response.ok().build();
 		} catch (IOException e) {
 			e.printStackTrace();
-			return null;
+			return Response.serverError().build();
 		}
 	}
 
 	@Override
-	public AudioData audioData(Long uid, String sessionId, Long vid) {
-		if (!isSessionId(uid, sessionId) || vid == null) {
+	public AudioData audioData(Long uid, String sessionId, Long aid) {
+		if (!isSessionId(uid, sessionId) || aid == null) {
 			return null;
 		}
-		return dao().audioData(vid);
+		return dao().audioDataInfoByAid(aid);
 	}
 
 	@Override
@@ -152,7 +149,7 @@ public class RestApiImpl implements RestApi {
 		AudioDataList list = new AudioDataList();
 		do {
 			list.getList().clear();
-			List<Integer> pending = dao().pendingIds(uid);
+			List<Long> pending = dao().pendingVids(uid);
 			if (pending.isEmpty()) {
 				return list;
 			}
@@ -160,8 +157,8 @@ public class RestApiImpl implements RestApi {
 			if (pending.size() > qty) {
 				pending = pending.subList(0, qty);
 			}
-			for (Integer vid : pending) {
-				list.getList().add(dao().audioData(vid));
+			for (Long vid : pending) {
+				list.getList().add(dao().audioDataInfoByVid(vid));
 			}
 		} while (list.getList().isEmpty());
 		return list;
@@ -186,7 +183,7 @@ public class RestApiImpl implements RestApi {
 			return null;
 		}
 		dao().setVote(uid, vid, bad, poor, good);
-		return dao().audioData(vid);
+		return dao().audioDataInfoByAid(vid);
 	}
 
 	@Override
@@ -194,10 +191,10 @@ public class RestApiImpl implements RestApi {
 		if (!isSessionId(uid, sessionId) || page == null || size == null) {
 			return null;
 		}
-		List<Integer> vids = dao().audioDataIdsFor(uid);
+		List<Long> vids = dao().audioDataVidsFor(uid);
 		AudioDataList list = new AudioDataList();
-		for (Integer vid : vids) {
-			list.getList().add(dao().audioData(vid));
+		for (Long vid : vids) {
+			list.getList().add(dao().audioDataInfoByVid(vid));
 		}
 		return list;
 	}
@@ -223,13 +220,21 @@ public class RestApiImpl implements RestApi {
 	@Override
 	public Response audioQualityVotesCsv() {
 		List<VoteResult> voteResults = dao().audioVoteResults();
-		String[] header = { "File", "Bad", "Poor", "Good", "Ranking", "Votes" };
+		String[] header = { "Id", "Bad", "Poor", "Good", "Ranking", "Votes", "Text", "File" };
 		try (StringWriter writer = new StringWriter(); CSVWriter csv = new CSVWriter(writer)) {
 			csv.writeNext(header);
 			for (VoteResult result : voteResults) {
-				String[] row = { result.getFile(), //
-						result.getBad() + "", result.getPoor() + "", result.getGood() + "", //
-						result.getRanking() + "", result.getVotes() + "" };
+				AudioBytesInfo info = dao().audioBytesInfo(result.getAid());
+				String[] row = { //
+						result.getAid() + "", //
+						result.getBad() + "", //
+						result.getPoor() + "", //
+						result.getGood() + "", //
+						result.getRanking() + "", //
+						result.getVotes() + "", //
+						info.getTxt(), //
+						info.getFile() //						
+						};
 				csv.writeNext(row);
 			}
 			csv.flush();

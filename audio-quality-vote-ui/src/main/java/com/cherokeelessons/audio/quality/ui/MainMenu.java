@@ -144,7 +144,7 @@ public class MainMenu extends Composite implements UiView {
 			MaterialRow fileNameRow = new MaterialRow();
 			
 			MaterialColumn fileNameColumn = new MaterialColumn();
-			String audioFile = item.getAudioFile();
+			String audioFile = item.getFile();
 			int last = audioFile.lastIndexOf("/");
 			if (last>-1) {
 				audioFile=audioFile.substring(last+1);
@@ -159,7 +159,7 @@ public class MainMenu extends Composite implements UiView {
 			MaterialRow textRow = new MaterialRow();
 			
 			MaterialColumn c0 = new MaterialColumn();
-			MaterialLabel text = new MaterialLabel(item.getText().trim());
+			MaterialLabel text = new MaterialLabel(item.getTxt().trim());
 			text.setFontWeight(FontWeight.BOLD);
 			text.setFontSize("125pct");
 			c0.add(text);
