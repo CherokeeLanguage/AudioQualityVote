@@ -17,6 +17,8 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
+import org.apache.commons.lang3.StringUtils;
+
 import com.cherokeelessons.audio.quality.db.AudioQualityVoteDao;
 import com.cherokeelessons.audio.quality.shared.AudioBytesInfo;
 import com.cherokeelessons.audio.quality.shared.AudioData;
@@ -104,9 +106,9 @@ public class RestApiImpl implements RestApi {
 
 	@Override
 	public Response audioGet(String id) {
-		int aid;
+		Long aid;
 		try {
-			aid = Integer.parseInt(id);
+			aid = Long.parseLong(id);
 		} catch (NumberFormatException e) {
 			return Response.status(Status.NOT_FOUND).build();
 		}
@@ -121,9 +123,11 @@ public class RestApiImpl implements RestApi {
 		}
 		
 		try {
+			String audioBytesMime = StringUtils.defaultString(dao().audioBytesMime(aid), "audio/mpeg");
 			response.setHeader("Cache-Control", "public,max-age=" + (60 * 60 * 24));
+			response.setContentType(audioBytesMime);
 			dao().audioBytesStream(aid, response.getOutputStream());
-			return Response.ok().build();
+			return Response.ok().type(audioBytesMime).build();
 		} catch (IOException e) {
 			e.printStackTrace();
 			return Response.serverError().build();

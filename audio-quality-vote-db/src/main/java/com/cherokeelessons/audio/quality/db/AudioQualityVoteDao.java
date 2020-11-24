@@ -501,4 +501,7 @@ public interface AudioQualityVoteDao extends SqlObject {
 
 	@SqlQuery("select aid from aqv_audio where file=:file order by uid limit 1")
 	Long getAidForFile(@Bind("file")String file);
+
+	@SqlQuery("select mime from aqv_audio where aid=:aid")
+	String audioBytesMime(@Bind("aid")Long aid);
 }
