@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
@@ -20,12 +21,15 @@ import javax.ws.rs.core.Response.Status;
 
 import com.cherokeelessons.audio.quality.db.AudioQualityVoteDao;
 import com.cherokeelessons.audio.quality.db.AudioQualityVoteFiles;
+import com.cherokeelessons.audio.quality.shared.AudioBytesInfo;
 import com.cherokeelessons.audio.quality.shared.AudioData;
 import com.cherokeelessons.audio.quality.shared.AudioDataList;
 import com.cherokeelessons.audio.quality.shared.Consts;
 import com.cherokeelessons.audio.quality.shared.RestApi;
+import com.cherokeelessons.audio.quality.shared.TextForRecording;
 import com.cherokeelessons.audio.quality.shared.TopVoters;
 import com.cherokeelessons.audio.quality.shared.Total;
+import com.cherokeelessons.audio.quality.shared.UserAudioList;
 import com.cherokeelessons.audio.quality.shared.UserInfo;
 import com.cherokeelessons.audio.quality.shared.UserVoteCount;
 import com.cherokeelessons.audio.quality.shared.VoteResult;
@@ -37,7 +41,7 @@ import com.opencsv.CSVWriter;
 
 @Path("/")
 public class RestApiImpl implements RestApi {
-	
+
 	@Context
 	protected HttpSession session;
 
@@ -168,7 +172,7 @@ public class RestApiImpl implements RestApi {
 		if (uid == null || sessionId == null) {
 			return false;
 		}
-		if( Boolean.TRUE == dao().isSessionId(uid, sessionId)) {
+		if (Boolean.TRUE == dao().isSessionId(uid, sessionId)) {
 			dao().updateLastSeen(uid, sessionId);
 			dao().deleteOldSessions();
 			return true;
@@ -255,16 +259,14 @@ public class RestApiImpl implements RestApi {
 		}
 		TopVoters topVoters = new TopVoters();
 		List<Long> uids = dao().topUsersByVoteCounts(3);
-		for (Long topUid: uids) {
+		for (Long topUid : uids) {
 			UserVoteCount counts = new UserVoteCount();
 			counts.setPending(dao().userPendingVoteCount(topUid));
 			counts.setVoted(dao().userCompletedVoteCount(topUid));
-			counts.setUid(topUid);			
+			counts.setUid(topUid);
 			topVoters.getTopVoters().add(counts);
 		}
-		Collections.sort(topVoters.getTopVoters(), 
-			(a,b)->Integer.compare(b.getVoted(), a.getVoted())
-		);
+		Collections.sort(topVoters.getTopVoters(), (a, b) -> Integer.compare(b.getVoted(), a.getVoted()));
 		return topVoters;
 	}
 
@@ -274,5 +276,79 @@ public class RestApiImpl implements RestApi {
 			return;
 		}
 		dao().deleteUserById(uid);
+	}
+
+	@Override
+	public UserAudioList audioUserList(Long uid, String sessionId) {
+		if (!isSessionId(uid, sessionId)) {
+			return null;
+		}
+		UserAudioList list = new UserAudioList();
+		list.setList(dao().audioBytesInfoFor(uid));
+		return list;
+	}
+
+	@Override
+	public TextForRecording audioText(Long uid, String sessionId, Integer count) {
+		if (!isSessionId(uid, sessionId)) {
+			return null;
+		}
+		TextForRecording tfr = new TextForRecording();
+		List<String> texts = dao().availableTexts();
+		texts.removeAll(dao().userTexts(uid));
+		if (texts.size()>count) {
+			texts = texts.subList(0, count);
+		}
+		tfr.setList(texts);
+		return tfr;
+	}
+
+	void sendError(Status status) {
+		sendError(status, null);
+	}
+
+	void sendError(Status status, String msg) {
+		try {
+			if (msg == null) {
+				response.sendError(status.getStatusCode());
+			} else {
+				response.sendError(status.getStatusCode(), msg);
+			}
+		} catch (IOException e) {
+		}
+	}
+
+	@Override
+	public AudioBytesInfo audioPut(Long uid, String sessionId, String text) {
+		if (!isSessionId(uid, sessionId)) {
+			sendError(Status.UNAUTHORIZED);
+			return null;
+		}
+		if (!dao().isValidText(text)) {
+			sendError(Status.BAD_REQUEST, "Unknown text");
+			return null;
+		}
+		long aid = -1;
+		String file = dao().fileForText(text);
+		AudioBytesInfo info = new AudioBytesInfo();
+		info.setFile(file);
+		info.setMime(request.getContentType());
+		info.setTxt(text);
+		info.setUid(uid);
+		info.setAid(dao().addAudioBytesInfo(info));
+		try {
+			ServletInputStream is = request.getInputStream();
+			dao().setAudioBytesData(aid, is);
+		} catch (IOException e) {
+			sendError(Status.BAD_REQUEST, e.getMessage());
+			return null;
+		}
+		return info;
+	}
+
+	@Override
+	public void audioDelete(Long uid, String sessionId, Long aid) {
+		// TODO Auto-generated method stub
+
 	}
 }

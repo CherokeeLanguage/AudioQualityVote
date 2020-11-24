@@ -12,9 +12,9 @@ compileJava.options.encoding = 'UTF-8'
 compileTestJava.options.encoding = 'UTF-8'
  
 dependencies {
-	implementation project(':audio-quality-vote-shared')
-	implementation "org.jdbi:jdbi3-core:3.17.0"
-	implementation "org.jdbi:jdbi3-sqlobject:3.17.0"
+	api project(':audio-quality-vote-shared')
+	api "org.jdbi:jdbi3-core:3.17.0"
+	api "org.jdbi:jdbi3-sqlobject:3.17.0"
 	implementation 'org.mariadb.jdbc:mariadb-java-client:2.7.0'
 	implementation "com.zaxxer:HikariCP:3.4.5"
 	//for streaming DB ops

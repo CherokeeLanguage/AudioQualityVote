@@ -1,18 +1,39 @@
 package com.cherokeelessons.audio.quality.shared;
 
+import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 
 public interface RestApi {
-	
+	@Path("audio/user/list")
+	@GET
+	UserAudioList audioUserList(@HeaderParam("uid") Long uid, @HeaderParam("session-id") String sessionId);
+
+	@Path("audio/user/text/get/{count}")
+	@GET
+	TextForRecording audioText(@HeaderParam("uid") Long uid, @HeaderParam("session-id") String sessionId,
+			@PathParam("count") Integer count);
+
+	@Path(ApiPaths.AUDIO_PUT)
+	@PUT
+	Object audioPut(@HeaderParam("uid") Long uid, @HeaderParam("session-id") String sessionId,
+			@QueryParam("text") String text);
+
+	@Path("audio/user/delete/{aid}")
+	@DELETE
+	void audioDelete(@HeaderParam("uid") Long uid, @HeaderParam("session-id") String sessionId,
+			@PathParam("aid") Long aid);
+
 	@Path("user/delete")
 	@POST
 	void deleteSelf(@HeaderParam("uid") Long uid, @HeaderParam("session-id") String sessionId);
-	
+
 	@Path("user/login")
 	@POST
 	UserInfo login(@HeaderParam("id-token") String idToken);
@@ -25,8 +46,8 @@ public interface RestApi {
 	@GET
 	void logout(@HeaderParam("uid") Long uid, @HeaderParam("session-id") String sessionId);
 
-	@Produces("audio/mpeg")
-	@Path(ApiPaths.audioFile)
+	@Produces("audio/fetch")
+	@Path(ApiPaths.AUDIO_FILE)
 	@GET
 	Object audioGet(@PathParam("vid") String id);
 
@@ -40,11 +61,11 @@ public interface RestApi {
 	AudioData audioVote(@HeaderParam("uid") Long uid, @HeaderParam("session-id") String sessionId,
 			@PathParam("vid") Long vid, @PathParam("bad") Integer bad, @PathParam("poor") Integer poor,
 			@PathParam("good") Integer good);
-	
+
 	@Path("audio/vote/my/counts")
 	@GET
 	UserVoteCount myVoteCounts(@HeaderParam("uid") Long uid, @HeaderParam("session-id") String sessionId);
-	
+
 	@Path("user/top-voters")
 	@GET
 	TopVoters topVoters(@HeaderParam("uid") Long uid, @HeaderParam("session-id") String sessionId);
@@ -63,18 +84,19 @@ public interface RestApi {
 	@GET
 	AudioDataList audioListVotes(@HeaderParam("uid") Long uid, @HeaderParam("session-id") String sessionId,
 			@PathParam("size") Integer size, @PathParam("page") Integer page);
-	
+
 	@Produces("text/csv")
-	@Path(ApiPaths.audioQualityVotesCsv)
+	@Path(ApiPaths.VOTES_CSV)
 	@GET
 	Object audioQualityVotesCsv();
 
 	@Path("audio/list/count")
 	@GET
 	Total audioTrackCount(@HeaderParam("uid") Long uid, @HeaderParam("session-id") String sessionId);
-	
+
 	interface ApiPaths {
-		String audioFile = "audio/file/{vid}";
-		String audioQualityVotesCsv="audio/votes/list/AudioQualityVotes.csv";	
+		String AUDIO_FILE = "audio/file/{vid}";
+		String VOTES_CSV = "audio/votes/list/AudioQualityVotes.csv";
+		String AUDIO_PUT = "audio/user/put";
 	}
 }

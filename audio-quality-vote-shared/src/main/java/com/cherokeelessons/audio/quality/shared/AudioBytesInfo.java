@@ -1,15 +1,11 @@
 package com.cherokeelessons.audio.quality.shared;
 
-import java.time.LocalDateTime;
-
 public class AudioBytesInfo {
 	private long aid;
 	private long uid;
 	private String file;
 	private String txt;
 	private String mime;
-	private LocalDateTime modified;
-	private LocalDateTime created;
 	public long getAid() {
 		return aid;
 	}
@@ -40,16 +36,4 @@ public class AudioBytesInfo {
 	public void setMime(String mime) {
 		this.mime = mime;
 	}
-	public LocalDateTime getModified() {
-		return modified;
-	}
-	public void setModified(LocalDateTime modified) {
-		this.modified = modified;
-	}
-	public LocalDateTime getCreated() {
-		return created;
-	}
-	public void setCreated(LocalDateTime created) {
-		this.created = created;
-	}	
 }

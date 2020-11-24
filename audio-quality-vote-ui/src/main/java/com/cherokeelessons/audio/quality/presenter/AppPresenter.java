@@ -5,13 +5,13 @@ import java.util.concurrent.CompletableFuture;
 
 import javax.inject.Inject;
 
+import org.fusesource.restygwt.client.Defaults;
 import org.fusesource.restygwt.client.ServiceRoots;
 
 import com.cherokeelessons.audio.quality.dagger.UiComponents;
 import com.cherokeelessons.audio.quality.model.Api;
 import com.cherokeelessons.audio.quality.model.ClientSessionState;
 import com.cherokeelessons.audio.quality.model.Display;
-import com.cherokeelessons.audio.quality.model.Handler;
 import com.cherokeelessons.audio.quality.shared.Consts;
 import com.cherokeelessons.audio.quality.shared.RestApi;
 import com.cherokeelessons.audio.quality.shared.TopVoters;
@@ -64,14 +64,16 @@ public class AppPresenter {
 	}
 
 	private String audioUrl(long vid) {
-		return ServiceRoots.get("api") + RestApi.ApiPaths.audioFile.replace("{vid}", vid + "");
+		return ServiceRoots.get("api") + RestApi.ApiPaths.AUDIO_FILE.replace("{vid}", vid + "");
 	}
 
 	private String csvUrl() {
-		return ServiceRoots.get("api") + RestApi.ApiPaths.audioQualityVotesCsv;
+		return ServiceRoots.get("api") + RestApi.ApiPaths.VOTES_CSV;
 	}
 
 	public void init() {
+		Defaults.setAddXHttpMethodOverrideHeader(false);
+		Defaults.setRequestTimeout(30000);
 		ServiceRoots.add("api", GWT.getHostPageBaseURL() + "api");
 		loading.loading(true, "Init");
 		showLogin();

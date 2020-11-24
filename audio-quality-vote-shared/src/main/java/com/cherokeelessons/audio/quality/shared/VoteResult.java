@@ -2,6 +2,7 @@ package com.cherokeelessons.audio.quality.shared;
 
 public class VoteResult {
 	private String file;
+	private Long aid;
 	private int bad;
 	private int poor;
 	private int good;
@@ -42,5 +43,11 @@ public class VoteResult {
 	}
 	public void setVotes(int votes) {
 		this.votes = votes;
+	}
+	public Long getAid() {
+		return aid;
+	}
+	public void setAid(Long aid) {
+		this.aid = aid;
 	}
 }

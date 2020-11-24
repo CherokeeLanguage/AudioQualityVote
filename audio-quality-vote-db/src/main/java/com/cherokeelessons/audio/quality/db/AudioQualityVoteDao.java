@@ -8,6 +8,7 @@ import java.io.OutputStream;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -17,10 +18,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.io.IOUtils;
 import org.jdbi.v3.core.Jdbi;
+import org.jdbi.v3.core.argument.InputStreamArgument;
 import org.jdbi.v3.core.transaction.SerializableTransactionRunner;
 import org.jdbi.v3.sqlobject.SqlObject;
 import org.jdbi.v3.sqlobject.SqlObjectPlugin;
 import org.jdbi.v3.sqlobject.config.KeyColumn;
+import org.jdbi.v3.sqlobject.config.RegisterArgumentFactory;
 import org.jdbi.v3.sqlobject.config.RegisterBeanMapper;
 import org.jdbi.v3.sqlobject.config.ValueColumn;
 import org.jdbi.v3.sqlobject.customizer.Bind;
@@ -116,6 +119,9 @@ public interface AudioQualityVoteDao extends SqlObject {
 	@SqlScript("create index if not exists modified on aqv_votes(modified)")
 	@SqlScript("create index if not exists created on aqv_votes(created)")
 	
+	@SqlScript("alter table aqv_votes add column if not exists aid bigint unsigned")
+	@SqlScript("create index if not exists aid on aqv_votes(aid)")
+	
 	@SqlScript("create table if not exists aqv_audio" //
 			+ " (aid serial," //
 			+ " uid bigint unsigned," //
@@ -151,37 +157,49 @@ public interface AudioQualityVoteDao extends SqlObject {
 	@SqlUpdate("delete from aqv_audio where uid=:uid")
 	void deleteAudioBytesByUid(@Bind("uid")long uid);
 	
-	@SqlQuery("select aid, uid, file, txt, mime, modified, created" //
+	@SqlQuery("select aid, uid, file, txt, mime" //
 			+ " from aqv_audio where aid=:aid")
 	@RegisterBeanMapper(AudioBytesInfo.class)
 	AudioBytesInfo audioBytesInfo(@Bind("aid")long aid);
 	
+	@SqlQuery("select aid, uid, file, txt, mime" //
+			+ " from aqv_audio where uid=:uid")
+	@RegisterBeanMapper(AudioBytesInfo.class)
+	List<AudioBytesInfo> audioBytesInfoFor(@Bind("uid")long uid);
+	
+	@Transaction
+	default long addAudioBytesInfo(AudioBytesInfo info) {
+		deleteAudioBytesInfo(info);
+		return insertAudioBytesInfo(info);
+	}
 	@SqlUpdate("insert into aqv_audio (uid, file, txt, mime)"
 			+ " values"
 			+ " (:uid, :file, :txt, :mime)")
 	@GetGeneratedKeys
-	long addAudioBytesInfo(@BindBean AudioBytesInfo info);
+	long insertAudioBytesInfo(@BindBean AudioBytesInfo info);
+	
+	@SqlUpdate("delete from aqv_audio where uid=:uid and file=:file")
+	void deleteAudioBytesInfo(@BindBean AudioBytesInfo info);
 	
 	@SqlUpdate("update aqv_audio set data=:data where aid=:aid")
 	void setAudioBytesData(@Bind("aid")long aid, @Bind("data") byte[] data);
 	
 	default void setAudioBytesData(long aid, InputStream data) {
-		useHandle(h->{
-			h.createUpdate("update aqv_audio set data=:data where aid=:aid") //
-			.bind("aid", aid)
-			.bind("data", data)
-			.execute();
-		});
-	}
-	
-	default void setAudioBytesData(long aid, File data) {
-		try (FileInputStream fis = new FileInputStream(data)) {
+		try {
 			useHandle(h->{
 				h.createUpdate("update aqv_audio set data=:data where aid=:aid") //
-				.bind("aid", aid)
-				.bind("data", fis)
+				.bind("data", new InputStreamArgument(data, data.available(), false)) //
+				.bind("aid", aid) //
 				.execute();
 			});
+		} catch (IOException e) {
+			throw new IllegalStateException(e);
+		}
+	}
+	
+	default void setAudioBytesData(long aid, File file) {
+		try (FileInputStream fis = new FileInputStream(file)) {
+			setAudioBytesData(aid, fis);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
@@ -192,6 +210,12 @@ public interface AudioQualityVoteDao extends SqlObject {
 			+ " vid=:vid")
 	@RegisterBeanMapper(AudioData.class)
 	AudioData audioData(@Bind("vid")long vid);
+	
+	@SqlQuery("select *" //
+			+ " from aqv_votes" //
+			+ " where aid is null OR aid < 1")
+	@RegisterBeanMapper(AudioBytesInfo.class)
+	List<AudioBytesInfo> audioVoteEntriesForMigration();
 	
 	@SqlQuery("select vid from aqv_votes where "
 			+ " uid=:uid AND good=0 AND poor=0 AND bad=0")
@@ -223,7 +247,7 @@ public interface AudioQualityVoteDao extends SqlObject {
 	default void scanForNewFiles(long uid) {
 		try {
 			AtomicInteger maxNewFiles=new AtomicInteger(50);
-			Set<String> already = audioDataFilesFor(uid);
+			Set<String> already = new HashSet<>(audioDataFilesFor(uid));
 			Map<String, Integer> rankings = voteRankingsByFile(MIN_VOTES_FILTER);
 			File parentFolder = AudioQualityVoteFiles.getFolder().getAbsoluteFile();
 			List<AudioData> files = AudioQualityVoteFiles.getAudioData();
@@ -340,7 +364,7 @@ public interface AudioQualityVoteDao extends SqlObject {
 	List<Integer> audioDataIdsFor(@Bind("uid")Long uid);
 	
 	@SqlQuery("select file from aqv_votes where uid=:uid")
-	Set<String> audioDataFilesFor(@Bind("uid")Long uid);
+	List<String> audioDataFilesFor(@Bind("uid")Long uid);
 	
 	@SqlQuery("select file," //
 			+ " sum(bad) bad, sum(poor) poor, sum(good) good," //
@@ -375,6 +399,20 @@ public interface AudioQualityVoteDao extends SqlObject {
 	@KeyColumn("file")
 	@ValueColumn("ranking")
 	Map<String, Integer> voteRankingsByFile(@Bind("minVotes")int minVotes);
+	
+	@SqlQuery("select file," //
+			+ " avg(good) - (avg(bad)*2+avg(poor)) ranking,"
+			+ " count(*) votes" //
+			+ " from aqv_votes" //
+			+ " where" //
+			+ " (bad>0 OR poor>0 or good>0)" //
+			+ " group by file" //
+			+ " having votes >= :minVotes"
+			+ " AND"
+			+ " ranking >= :minRanking")
+	@KeyColumn("file")
+	@ValueColumn("ranking")
+	Map<String, Integer> voteRankingsByFile(@Bind("minVotes")int minVotes, @Bind("minRanking")double minRanking);
 
 	@SqlQuery("select count(*) from aqv_votes where uid=:uid AND good=0 AND poor=0 AND bad=0")
 	int userPendingVoteCount(@Bind("uid")Long uid);
@@ -392,9 +430,9 @@ public interface AudioQualityVoteDao extends SqlObject {
 	@SqlQuery("select count(distinct file) from aqv_votes")
 	long audioTrackCount();
 
-	@SqlUpdate("delete from aqv_users where uid=:uid and :uid is not null;"
-			+ " delete from aqv_votes where uid=:uid and :uid is not null;"
-			+ " delete from aqv_sessions where uid=:uid and :uid is not null")
+	@SqlUpdate("delete from aqv_users where uid=:uid;"
+			+ " delete from aqv_votes where uid=:uid;"
+			+ " delete from aqv_sessions where uid=:uid")
 	void deleteUserById(@Bind("uid")Long uid);
 
 	@SqlUpdate("update aqv_sessions set last_seen=NOW() where uid=:uid AND session=:session")
@@ -402,5 +440,25 @@ public interface AudioQualityVoteDao extends SqlObject {
 	
 	@SqlUpdate("delete from aqv_sessions where last_seen < NOW() - INTERVAL 1 WEEK")
 	void deleteOldSessions();
+
+	@SqlQuery("select distinct txt from aqv_audio where uid<1")
+	List<String> availableTexts();
 	
+	@SqlQuery("select count(*)>0 from aqv_audio where uid<1 AND txt=:text")
+	boolean isValidText(@Bind("text")String text);
+	
+	@SqlQuery("select file from aqv_audio where uid<1 AND txt=:text")
+	String fileForText(@Bind("text")String text);
+
+	@SqlQuery("select txt from aqv_audio where uid=:uid")
+	List<String> userTexts(@Bind("uid")Long uid);
+
+	@SqlQuery("select count(*)>0 from aqv_audio where uid=:uid AND file=:file and data is not null")
+	boolean audioBytesInfoExistsFor(@Bind("uid")long uid,@Bind("file") String file);
+
+	@SqlUpdate("update aqv_votes set aid=:aid where file=:file")
+	void setAudioIdForMatchingVotes(@Bind("aid")long aid, @Bind("file") String file);
+
+	@SqlQuery("select aid from aqv_audio where file=:file order by uid limit 1")
+	Long getAidForFile(@Bind("file")String file);
 }
