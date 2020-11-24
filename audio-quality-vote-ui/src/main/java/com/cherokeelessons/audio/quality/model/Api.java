@@ -165,6 +165,10 @@ public class Api {
 
 	public CompletableFuture<Boolean> loggedIn() {
 		CallbackFuture<Boolean> cf = new CallbackFuture<>();
+		if (state.uid()==null || state.uid()<1 || state.sessionId()==null || state.sessionId().trim().isEmpty()) {
+			runasync.run(()->cf.future().complete(false));
+			return cf.future();
+		}
 		call(cf).isSessionId(state.uid(), state.sessionId());
 		return cf.future().exceptionally((e)->{
 			return false;
