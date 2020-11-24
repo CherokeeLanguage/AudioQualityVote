@@ -46,6 +46,8 @@
 					text="You agree that any recordings you submit will be licensed under a CC BY-SA license and may be freely shared."></m:MaterialLabel>
 				<m:MaterialLabel
 					text="All submitted audio tracks will be attributed to &quot;anonymous submitter&quot;."></m:MaterialLabel>
+					<m:MaterialLabel
+					text="In addition any submitted audio tracks will be voted on by other users for quality and accuracy."></m:MaterialLabel>
 				<m:MaterialLink target="_blank"
 					text="Click here for licensing details: [CC BY-SA]"
 					href="https://creativecommons.org/licenses/by-sa/4.0/" />
