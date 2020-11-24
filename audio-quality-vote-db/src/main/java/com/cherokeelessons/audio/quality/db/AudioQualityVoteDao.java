@@ -150,6 +150,10 @@ public interface AudioQualityVoteDao extends SqlObject {
 	
 	default void audioBytesStream(long aid, OutputStream os) throws IOException {
 		AudioBytesObject data = audioBytesObject(aid);
+		if (data==null || data.getData()==null) {
+			data = new AudioBytesObject();
+			data.setData(new byte[0]);
+		}
 		try (InputStream bs = new ByteArrayInputStream(data.getData())) {
 			IOUtils.copy(bs, os);
 		}
