@@ -26,10 +26,6 @@
 				<m:MaterialButton iconType="CANCEL"
 					iconPosition="LEFT" ui:field="btnRecordStop" text="STOP"></m:MaterialButton>
 			</m:MaterialColumn>
-			<m:MaterialColumn grid="s4 m3 l2">
-				<m:MaterialButton iconType="SKIP_NEXT"
-					iconPosition="LEFT" ui:field="btnTextSkip" text="SKIP"></m:MaterialButton>
-			</m:MaterialColumn>
 		</m:MaterialRow>
 		<h:Hr margin="16"></h:Hr>
 		<m:MaterialRow>
@@ -38,8 +34,8 @@
 					text="SUBMIT"></m:MaterialButton>
 			</m:MaterialColumn>
 			<m:MaterialColumn grid="s4 m3 l2">
-				<m:MaterialButton iconType="CANCEL" iconPosition="LEFT" ui:field="btnCancel"
-					text="CANCEL"></m:MaterialButton>
+				<m:MaterialButton iconType="SKIP_NEXT"
+					iconPosition="LEFT" ui:field="btnTextSkip" text="SKIP"></m:MaterialButton>
 			</m:MaterialColumn>
 		</m:MaterialRow>
 	</m:MaterialContainer>

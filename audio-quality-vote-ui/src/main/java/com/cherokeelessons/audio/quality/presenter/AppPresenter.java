@@ -76,7 +76,19 @@ public class AppPresenter {
 		Defaults.setRequestTimeout(30000);
 		ServiceRoots.add("api", GWT.getHostPageBaseURL() + "api");
 		loading.loading(true, "Init");
-		showLogin();
+		maybeShowLogin();
+	}
+
+	private void maybeShowLogin() {
+		api.loggedIn().thenAccept((b)->{
+			if (b) {
+				loading.loading(false);
+				showMain();
+			} else {
+				loading.loading(false);
+				showLogin();
+			}
+		});
 	}
 
 	private void showLogin() {

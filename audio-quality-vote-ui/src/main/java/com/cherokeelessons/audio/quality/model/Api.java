@@ -163,4 +163,12 @@ public class Api {
 		});
 	}
 
+	public CompletableFuture<Boolean> loggedIn() {
+		CallbackFuture<Boolean> cf = new CallbackFuture<>();
+		call(cf).isSessionId(state.uid(), state.sessionId());
+		return cf.future().exceptionally((e)->{
+			return false;
+		});
+	}
+
 }

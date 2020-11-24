@@ -46,9 +46,6 @@ public class RecordAudio extends Composite {
 	@UiField
 	protected MaterialButton btnSubmit;
 
-	@UiField
-	protected MaterialButton btnCancel;
-
 	protected Set<HandlerRegistration> submitRegistrations = new HashSet<>();
 
 	public HandlerRegistration onSubmit(Handler<Void> handler) {
@@ -130,6 +127,7 @@ public class RecordAudio extends Composite {
 					src = URL.createObjectURL(mp3);
 					audio.setSrc(src);
 					audio.setControls(true);
+					btnSubmit.setEnabled(true);
 				}
 				return media;				
 			};
@@ -145,6 +143,7 @@ public class RecordAudio extends Composite {
 			btnRecordStart.addClickHandler((e)->recorder.start());
 			btnRecordStop.addClickHandler((e)->recorder.stop());
 			btnRecordStop.setEnabled(false);
+			btnSubmit.setEnabled(false);
 			audio.setControls(false);
 			return null;
 		});
