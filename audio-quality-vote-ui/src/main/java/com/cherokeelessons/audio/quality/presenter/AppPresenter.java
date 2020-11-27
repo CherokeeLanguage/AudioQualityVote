@@ -19,6 +19,7 @@ import com.cherokeelessons.audio.quality.shared.UserVoteCount;
 import com.cherokeelessons.audio.quality.ui.Loading;
 import com.cherokeelessons.audio.quality.ui.Login;
 import com.cherokeelessons.audio.quality.ui.MainMenu;
+import com.cherokeelessons.audio.quality.ui.RecordAudio;
 import com.cherokeelessons.audio.quality.ui.Settings;
 import com.google.gwt.core.client.Callback;
 import com.google.gwt.core.client.GWT;
@@ -147,7 +148,10 @@ public class AppPresenter {
 	}
 
 	private void showRecord(MainMenu view) {
-		view.showRecordView();
+		RecordAudio recView = view.showRecordView();
+		recView.onSubmit((v)->{
+			api.putUserAudio(recView.audioBlob(), recView.getMimeType(), "Jo:g hale:hwisd. [04-chr] | Random dictionary entry(ies)\n");
+		});
 	}
 
 	private void showSettings(MainMenu view) {

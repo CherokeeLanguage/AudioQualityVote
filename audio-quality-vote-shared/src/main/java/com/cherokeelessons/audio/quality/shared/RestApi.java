@@ -1,5 +1,7 @@
 package com.cherokeelessons.audio.quality.shared;
 
+import java.io.InputStream;
+
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
@@ -10,6 +12,7 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 
+@Produces("application/json")
 public interface RestApi {
 	@Path("audio/user/list")
 	@GET
@@ -22,7 +25,7 @@ public interface RestApi {
 
 	@Path(ApiPaths.AUDIO_PUT)
 	@PUT
-	Object audioPut(@HeaderParam("uid") Long uid, @HeaderParam("session-id") String sessionId,
+	AudioBytesInfo audioPut(@HeaderParam("uid") Long uid, @HeaderParam("session-id") String sessionId,
 			@QueryParam("text") String text);
 
 	@Path("audio/user/delete/{aid}")
@@ -46,7 +49,6 @@ public interface RestApi {
 	@GET
 	void logout(@HeaderParam("uid") Long uid, @HeaderParam("session-id") String sessionId);
 
-	@Produces("audio/fetch")
 	@Path(ApiPaths.AUDIO_FILE)
 	@GET
 	Object audioGet(@PathParam("aid") String aid);

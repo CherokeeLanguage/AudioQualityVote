@@ -9,8 +9,12 @@
 	</ui:style>
 	<m:MaterialContainer>
 		<m:MaterialRow margin="16">
-			<m:MaterialLabel text="TEXT FOR RECORDING"
-				fontWeight="BOLD" fontSize="125pct"></m:MaterialLabel>
+			<m:MaterialColumn>
+				<m:MaterialLabel ui:field="lblText"
+					text="TEXT FOR RECORDING" fontWeight="BOLD" fontSize="125pct"></m:MaterialLabel>
+				<m:MaterialLabel ui:field="lblSyllabary" text=""
+					fontSize="110pct"></m:MaterialLabel>
+			</m:MaterialColumn>
 		</m:MaterialRow>
 		<h:Hr margin="16"></h:Hr>
 		<m:MaterialRow>
@@ -46,11 +50,11 @@
 					text="You agree that any recordings you submit will be licensed under a CC BY-SA license and may be freely shared."></m:MaterialLabel>
 				<m:MaterialLabel
 					text="All submitted audio tracks will be attributed to &quot;anonymous submitter&quot;."></m:MaterialLabel>
-					<m:MaterialLabel
-					text="In addition any submitted audio tracks will be voted on by other users for quality and accuracy."></m:MaterialLabel>
 				<m:MaterialLink target="_blank"
 					text="Click here for licensing details: [CC BY-SA]"
 					href="https://creativecommons.org/licenses/by-sa/4.0/" />
+				<m:MaterialLabel
+					text="Note: Any submitted audio tracks will be voted on by other users for quality and accuracy."></m:MaterialLabel>
 			</m:MaterialColumn>
 		</m:MaterialRow>
 	</m:MaterialContainer>

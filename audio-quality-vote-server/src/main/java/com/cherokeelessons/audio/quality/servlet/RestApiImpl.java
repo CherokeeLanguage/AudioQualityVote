@@ -1,13 +1,16 @@
 package com.cherokeelessons.audio.quality.servlet;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.StringWriter;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
@@ -334,7 +337,14 @@ public class RestApiImpl implements RestApi {
 			return null;
 		}
 		if (!dao().isValidText(text)) {
-			sendError(Status.BAD_REQUEST, "Unknown text");
+			sendError(Status.BAD_REQUEST, "Unknown text: "+text);
+			return null;
+		}
+		InputStream is;
+		try {
+			is = request.getInputStream();
+		} catch (IOException e) {
+			sendError(Status.INTERNAL_SERVER_ERROR, e.getMessage());
 			return null;
 		}
 		long aid = -1;
@@ -345,13 +355,9 @@ public class RestApiImpl implements RestApi {
 		info.setTxt(text);
 		info.setUid(uid);
 		info.setAid(dao().addAudioBytesInfo(info));
-		try {
-			ServletInputStream is = request.getInputStream();
-			dao().setAudioBytesData(aid, is);
-		} catch (IOException e) {
-			sendError(Status.BAD_REQUEST, e.getMessage());
-			return null;
-		}
+		aid=info.getAid();
+		System.out.println("New audio id: "+info.getAid());
+		dao().setAudioBytesData(aid, is);
 		return info;
 	}
 

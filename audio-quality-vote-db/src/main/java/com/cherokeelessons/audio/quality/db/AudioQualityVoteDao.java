@@ -6,13 +6,9 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.reflect.Type;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.sql.Blob;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -21,14 +17,9 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
 
 import org.apache.commons.io.IOUtils;
 import org.jdbi.v3.core.Jdbi;
-import org.jdbi.v3.core.argument.InputStreamArgument;
-import org.jdbi.v3.core.result.ResultProducer;
-import org.jdbi.v3.core.statement.Query;
-import org.jdbi.v3.core.statement.StatementContext;
 import org.jdbi.v3.core.transaction.SerializableTransactionRunner;
 import org.jdbi.v3.sqlobject.SqlObject;
 import org.jdbi.v3.sqlobject.SqlObjectPlugin;
@@ -208,16 +199,12 @@ public interface AudioQualityVoteDao extends SqlObject {
 	void setAudioBytesData(@Bind("aid")long aid, @Bind("data") byte[] data);
 	
 	default void setAudioBytesData(long aid, InputStream data) {
-		try {
 			useHandle(h->{
 				h.createUpdate("update aqv_audio set data=:data where aid=:aid") //
-				.bind("data", new InputStreamArgument(data, data.available(), false)) //
+				.bind("data", new ServletInputStreamArgument(data)) //
 				.bind("aid", aid) //
 				.execute();
 			});
-		} catch (IOException e) {
-			throw new IllegalStateException(e);
-		}
 	}
 	
 	default void setAudioBytesData(long aid, File file) {

@@ -5,7 +5,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.inject.Inject;
-import javax.ws.rs.HeaderParam;
 
 import org.fusesource.restygwt.client.REST;
 import org.fusesource.restygwt.client.ServiceRoots;
@@ -19,15 +18,12 @@ import com.cherokeelessons.audio.quality.shared.TopVoters;
 import com.cherokeelessons.audio.quality.shared.UserInfo;
 import com.cherokeelessons.audio.quality.shared.UserVoteCount;
 import com.github.nmorel.gwtjackson.client.ObjectMapper;
-import com.github.nmorel.gwtjackson.client.exception.JsonDeserializationException;
 import com.google.gwt.core.client.GWT;
-import com.google.gwt.core.client.JsonUtils;
+import com.google.gwt.http.client.URL;
 
 import elemental2.dom.Blob;
 import elemental2.dom.DomGlobal;
-import elemental2.dom.ProgressEvent;
 import elemental2.dom.XMLHttpRequest;
-import jsinterop.base.Js;
 
 public class Api {
 	@Inject
@@ -47,40 +43,44 @@ public class Api {
 	static interface AudioBytesInfoMapper extends ObjectMapper<AudioBytesInfo> {
 	}
 
-	public CompletableFuture<AudioBytesInfo> putUserAudio(Blob blob, String text) {
-		return putUserAudio(blob, text, (e) -> {});
+	public CompletableFuture<AudioBytesInfo> putUserAudio(Blob blob, String mimeType, String text) {
+		return putUserAudio(blob, mimeType, text, (e) -> {
+		});
 	}
 
-	public CompletableFuture<AudioBytesInfo> putUserAudio(Blob blob, String text, //
-			XMLHttpRequest.OnprogressFn onprogress
-			) {
+	public CompletableFuture<AudioBytesInfo> putUserAudio(Blob blob, String mimeType, String text, //
+			XMLHttpRequest.OnprogressFn onprogress) {
 		CompletableFuture<AudioBytesInfo> cf = new CompletableFuture<>();
 		if (blob == null) {
-			runasync.run(()->cf.completeExceptionally(new NullPointerException("blob is null")));
+			runasync.run(() -> cf.completeExceptionally(new NullPointerException("blob is null")));
 			return cf;
 		}
 		if (onprogress == null) {
-			runasync.run(()->cf.completeExceptionally(new NullPointerException("onprogress is null")));
+			runasync.run(() -> cf.completeExceptionally(new NullPointerException("onprogress is null")));
 			return cf;
 		}
 		AudioBytesInfoMapper mapper = GWT.create(AudioBytesInfoMapper.class);
-		XMLHttpRequest xhr=new XMLHttpRequest();
-		xhr.open("PUT", ServiceRoots.get("api")+RestApi.ApiPaths.AUDIO_PUT, true);
-		xhr.onabort=(e)->cf.completeExceptionally(new RuntimeException(JSON.stringify(e)));
-		xhr.onerror=(e)->cf.completeExceptionally(new RuntimeException(JSON.stringify(e)));
-		xhr.onprogress=(e)->onprogress.onInvoke(e);
-		xhr.onload = (e) -> {
+		XMLHttpRequest xhr_put = new XMLHttpRequest();
+		xhr_put.open("PUT", ServiceRoots.get("api") + RestApi.ApiPaths.AUDIO_PUT + "?text=" + URL.encode(text), true);
+		xhr_put.onabort = (e) -> cf.completeExceptionally(new RuntimeException(JSON.stringify(e)));
+		xhr_put.onerror = (e) -> cf.completeExceptionally(new RuntimeException(JSON.stringify(e)));
+		xhr_put.onprogress = (e) -> onprogress.onInvoke(e);
+		xhr_put.onload = (e) -> {
 			AudioBytesInfo info;
 			try {
-				info = mapper.read(xhr.responseText);
+				info = mapper.read(xhr_put.responseText);
 				cf.complete(info);
 			} catch (Exception e1) {
 				cf.completeExceptionally(e1);
-			}			
+			}
 		};
-		xhr.setRequestHeader("uid", ""+state.uid());
-		xhr.setRequestHeader("session-id", state.sessionId());
-		xhr.send(blob);
+		xhr_put.setRequestHeader("uid", "" + state.uid());
+		xhr_put.setRequestHeader("session-id", state.sessionId());
+		xhr_put.setRequestHeader("Accept", "application/json");
+		if (mimeType!=null && !mimeType.trim().isEmpty()) {
+			xhr_put.setRequestHeader("Content-Type", mimeType);
+		}
+		xhr_put.send(blob);
 		return cf;
 	}
 
@@ -165,12 +165,12 @@ public class Api {
 
 	public CompletableFuture<Boolean> loggedIn() {
 		CallbackFuture<Boolean> cf = new CallbackFuture<>();
-		if (state.uid()==null || state.uid()<1 || state.sessionId()==null || state.sessionId().trim().isEmpty()) {
-			runasync.run(()->cf.future().complete(false));
+		if (state.uid() == null || state.uid() < 1 || state.sessionId() == null || state.sessionId().trim().isEmpty()) {
+			runasync.run(() -> cf.future().complete(false));
 			return cf.future();
 		}
 		call(cf).isSessionId(state.uid(), state.sessionId());
-		return cf.future().exceptionally((e)->{
+		return cf.future().exceptionally((e) -> {
 			return false;
 		});
 	}
