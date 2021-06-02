@@ -1,24 +1,21 @@
 plugins {
   id "java-library"
   id "eclipse-wtp"
-  id "com.diffplug.eclipse.apt" version "3.24.0" apply false
-  id "org.gretty" version "3.0.3" apply false
-  id "org.wisepersist.gwt" version "1.1.9" apply false
-}
-
-sourceCompatibility = JavaVersion.VERSION_11
-targetCompatibility = JavaVersion.VERSION_11
-compileJava {
-    options.release = 11
+  id "com.diffplug.eclipse.apt"
+  id "org.gretty"
+  id "org.wisepersist.gwt"
 }
 
 compileJava.options.encoding = 'UTF-8'
+compileJava.options.release = 11
+
 compileTestJava.options.encoding = 'UTF-8'
- 
+compileTestJava.options.release = 11
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(11)
+java.toolchain.vendor = JvmVendorSpec.ADOPTOPENJDK
 
 allprojects {
-	apply plugin: "eclipse-wtp"
-	apply plugin: "com.diffplug.eclipse.apt"
 	repositories {
 		jcenter()
 		mavenCentral()

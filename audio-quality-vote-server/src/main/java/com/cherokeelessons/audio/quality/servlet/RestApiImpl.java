@@ -38,7 +38,8 @@ import com.cherokeelessons.audio.quality.shared.VoteResult;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
-import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.client.json.JsonFactory;
+import com.google.api.client.json.gson.GsonFactory;
 import com.opencsv.CSVWriter;
 
 @Path("/")
@@ -70,8 +71,13 @@ public class RestApiImpl implements RestApi {
 
 	@Override
 	public UserInfo login(String idToken) {
-		GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new JacksonFactory())
-				.setAudience(Arrays.asList(Consts.CLIENT_ID)).setIssuer("accounts.google.com").build();
+		NetHttpTransport transport = new NetHttpTransport();
+		JsonFactory factory = new GsonFactory();
+		List<String> audience = Arrays.asList(Consts.CLIENT_ID);
+		String issuer = "accounts.google.com";
+		GoogleIdTokenVerifier verifier = //
+				new GoogleIdTokenVerifier.Builder(transport, factory) //
+						.setAudience(audience).setIssuer(issuer).build();
 		GoogleIdToken token;
 		try {
 			token = verifier.verify(idToken);
@@ -121,10 +127,10 @@ public class RestApiImpl implements RestApi {
 			return Response.status(Status.NOT_FOUND).build();
 		}
 		if (!dao().audioBytesInfoHasData(aid)) {
-			System.err.println("Entry in db for aid " + aid+" does not have audio data attached.");
+			System.err.println("Entry in db for aid " + aid + " does not have audio data attached.");
 			return Response.status(Status.NOT_FOUND).build();
 		}
-		
+
 		try {
 			String audioBytesMime = StringUtils.defaultString(dao().audioBytesMime(aid), "audio/mpeg");
 			response.setHeader("Cache-Control", "public,max-age=" + (60 * 60 * 24));
@@ -240,8 +246,8 @@ public class RestApiImpl implements RestApi {
 						result.getRanking() + "", //
 						result.getVotes() + "", //
 						info.getTxt(), //
-						info.getFile() //						
-						};
+						info.getFile() //
+				};
 				csv.writeNext(row);
 			}
 			csv.flush();
@@ -308,7 +314,7 @@ public class RestApiImpl implements RestApi {
 		TextForRecording tfr = new TextForRecording();
 		List<String> texts = dao().availableTexts();
 		texts.removeAll(dao().userTexts(uid));
-		if (texts.size()>count) {
+		if (texts.size() > count) {
 			texts = texts.subList(0, count);
 		}
 		tfr.setList(texts);
@@ -337,7 +343,7 @@ public class RestApiImpl implements RestApi {
 			return null;
 		}
 		if (!dao().isValidText(text)) {
-			sendError(Status.BAD_REQUEST, "Unknown text: "+text);
+			sendError(Status.BAD_REQUEST, "Unknown text: " + text);
 			return null;
 		}
 		InputStream is;
@@ -355,8 +361,8 @@ public class RestApiImpl implements RestApi {
 		info.setTxt(text);
 		info.setUid(uid);
 		info.setAid(dao().addAudioBytesInfo(info));
-		aid=info.getAid();
-		System.out.println("New audio id: "+info.getAid());
+		aid = info.getAid();
+		System.out.println("New audio id: " + info.getAid());
 		dao().setAudioBytesData(aid, is);
 		return info;
 	}

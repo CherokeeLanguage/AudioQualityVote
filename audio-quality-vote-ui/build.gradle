@@ -1,18 +1,20 @@
-apply plugin: "java"
-apply plugin: "war"
-apply plugin: "org.gretty"
-apply plugin: "eclipse-wtp" 
-apply plugin: "org.wisepersist.gwt"
-apply plugin: "com.diffplug.eclipse.apt"
-
-sourceCompatibility = JavaVersion.VERSION_11
-targetCompatibility = JavaVersion.VERSION_11
-compileJava {
-    options.release = 11
+plugins {
+	id "java"
+	id "war"
+	id "org.gretty"
+	id "eclipse-wtp" 
+	id "org.wisepersist.gwt"
+	id "com.diffplug.eclipse.apt"
 }
- 
+
 compileJava.options.encoding = 'UTF-8'
+compileJava.options.release = 11
+
 compileTestJava.options.encoding = 'UTF-8'
+compileTestJava.options.release = 11
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(11)
+java.toolchain.vendor = JvmVendorSpec.ADOPTOPENJDK
 
 tasks.withType(org.wisepersist.gradle.plugins.gwt.GwtCompile) {
 	args "-optimize", "0", "-noincremental"
@@ -71,9 +73,9 @@ dependencies {
 	compileOnly "com.github.CherokeeLanguage.gwt-oauth2:gwt-oauth2:1.2-RC1"
 	
 	compileOnly ('javax.inject:javax.inject:1')
-	compileOnly ('com.google.dagger:dagger-compiler:2.+')
-	compileOnly ('com.google.dagger:dagger-gwt:2.+')
-	annotationProcessor ('com.google.dagger:dagger-compiler:2.+')
+	compileOnly ('com.google.dagger:dagger-compiler:2.36')
+	compileOnly ('com.google.dagger:dagger-gwt:2.36')
+	annotationProcessor ('com.google.dagger:dagger-compiler:2.36')
 	
 	compileOnly 'com.ekotrope:gwt-completablefuture:1.0.0'
 	
@@ -99,7 +101,15 @@ dependencies {
 	compileOnly 'javax.ws.rs:javax.ws.rs-api:2.1.1'
 }
 
+// Required for correct setup of APT in Eclipse
+eclipseJdt.dependsOn cleanEclipseJdt, eclipseJdtApt
+eclipseJdtApt.dependsOn cleanEclipseJdtApt, eclipseFactorypath
+eclipseFactorypath.dependsOn cleanEclipseFactorypath
+
 eclipse {
+	    // Required for correct setup of APT in Eclipse
+	    synchronizationTasks eclipseJdt
+
 	project {
 		name = 'Audio Quality Vote (UI)'
 	}

@@ -1,3 +1,13 @@
+pluginManagement {
+  plugins {
+    id "com.diffplug.eclipse.apt" version "3.29.1"
+    id 'com.github.johnrengelman.shadow' version '6.1.0'
+    id "io.freefair.lombok" version "6.0.0-m2"
+    id "org.gretty" version "3.0.4"
+    id "org.wisepersist.gwt" version "1.1.11"
+  }
+}
+
 rootProject.name = 'AudioQualityVote'
 
 include "audio-quality-vote-db"
@@ -5,27 +15,3 @@ include "audio-quality-vote-server"
 include "audio-quality-vote-shared"
 include "audio-quality-vote-ui"
 include "audio-quality-vote-war"
-
-String[] p = []
-
-/*
- * Dynamically locate loosely coupled project dependencies.
- */
-p.each { s->
-	boolean found=false;
-	File f;
-	f = new File(settingsDir,"../"+s); //preferred is side-by-side
-	found = new File(f, "build.gradle").exists();
-	if (!found) {
-		throw new RuntimeException("=== MISSING PROJECT: '"+s+"'");
-	}
-	include (":"+s);
-	project(":"+s).projectDir=f
-	s=new File(f, "settings.gradle")
-	if (s.exists()) {
-		String tmp = rootProject.name
-		apply from: s
-		rootProject.name = tmp
-	}
-}
-

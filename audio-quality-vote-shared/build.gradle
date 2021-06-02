@@ -1,13 +1,18 @@
-apply plugin: "java-library"
-
-sourceCompatibility = JavaVersion.VERSION_11
-targetCompatibility = JavaVersion.VERSION_11
-compileJava {
-    options.release = 11
+plugins {
+	id "java-library"
+	id "eclipse-wtp"
+	id "com.diffplug.eclipse.apt"
 }
 
 compileJava.options.encoding = 'UTF-8'
+compileJava.options.release = 11
+
 compileTestJava.options.encoding = 'UTF-8'
+compileTestJava.options.release = 11
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(11)
+java.toolchain.vendor = JvmVendorSpec.ADOPTOPENJDK
+
  
 dependencies {
 	compileOnly 'javax.servlet:javax.servlet-api:3.0.1'
@@ -15,7 +20,15 @@ dependencies {
 }
 
 
+// Required for correct setup of APT in Eclipse
+eclipseJdt.dependsOn cleanEclipseJdt, eclipseJdtApt
+eclipseJdtApt.dependsOn cleanEclipseJdtApt, eclipseFactorypath
+eclipseFactorypath.dependsOn cleanEclipseFactorypath
+
 eclipse {
+	    // Required for correct setup of APT in Eclipse
+	    synchronizationTasks eclipseJdt
+
 	project {
 		name = 'Audio Quality Vote (Shared)'
 	}

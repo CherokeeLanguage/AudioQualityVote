@@ -1,16 +1,18 @@
-apply plugin: "war"
-apply plugin: "eclipse-wtp"
-apply plugin: "org.gretty"
-apply plugin: "com.diffplug.eclipse.apt"
-
-sourceCompatibility = JavaVersion.VERSION_11
-targetCompatibility = JavaVersion.VERSION_11
-compileJava {
-    options.release = 11
+plugins {
+	id "war"
+	id "eclipse-wtp"
+	id "org.gretty"
+	id "com.diffplug.eclipse.apt"
 }
 
 compileJava.options.encoding = 'UTF-8'
+compileJava.options.release = 11
+
 compileTestJava.options.encoding = 'UTF-8'
+compileTestJava.options.release = 11
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(11)
+java.toolchain.vendor = JvmVendorSpec.ADOPTOPENJDK
  
 repositories {
 		jcenter()
@@ -31,7 +33,15 @@ war {
     archiveName "AudioQualityVote.war"
 }
 
+// Required for correct setup of APT in Eclipse
+eclipseJdt.dependsOn cleanEclipseJdt, eclipseJdtApt
+eclipseJdtApt.dependsOn cleanEclipseJdtApt, eclipseFactorypath
+eclipseFactorypath.dependsOn cleanEclipseFactorypath
+
 eclipse {
+	    // Required for correct setup of APT in Eclipse
+	    synchronizationTasks eclipseJdt
+	    
 	project {
 		name = 'Audio Quality Vote (War)'
 		referencedProjects

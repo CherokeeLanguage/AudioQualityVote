@@ -1,17 +1,20 @@
-apply plugin: "com.diffplug.eclipse.apt"
-apply plugin: "java-library"
-apply plugin: "eclipse-wtp"
-apply plugin: "org.gretty"
-apply plugin: "war"
-
-sourceCompatibility = JavaVersion.VERSION_11
-targetCompatibility = JavaVersion.VERSION_11
-compileJava {
-    options.release = 11
+plugins {
+	id "com.diffplug.eclipse.apt"
+	id "java-library"
+	id "eclipse-wtp"
+	id "org.gretty"
+	id "war"
 }
 
 compileJava.options.encoding = 'UTF-8'
+compileJava.options.release = 11
+
 compileTestJava.options.encoding = 'UTF-8'
+compileTestJava.options.release = 11
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(11)
+java.toolchain.vendor = JvmVendorSpec.ADOPTOPENJDK
+
  
  war {
  	archiveName "AudioQualityVote.war"
@@ -29,7 +32,8 @@ dependencies {
 	
 	implementation 'com.opencsv:opencsv:+'
 	
-	implementation 'com.google.api-client:google-api-client:+'
+	implementation 'com.google.api-client:google-api-client:1.31.5'
+	implementation 'com.google.api-client:google-api-client-jackson2:1.31.5'
 
 	implementation 'org.glassfish.jersey.containers:jersey-container-servlet:2.32'
 	implementation 'org.glassfish.jersey.media:jersey-media-json-jackson:2.32'
@@ -41,7 +45,15 @@ dependencies {
 	implementation 'javax.xml.bind:jaxb-api:2.3.1'
 }
 
+// Required for correct setup of APT in Eclipse
+eclipseJdt.dependsOn cleanEclipseJdt, eclipseJdtApt
+eclipseJdtApt.dependsOn cleanEclipseJdtApt, eclipseFactorypath
+eclipseFactorypath.dependsOn cleanEclipseFactorypath
+
 eclipse {
+	    // Required for correct setup of APT in Eclipse
+	    synchronizationTasks eclipseJdt
+
 	project {
 		name = 'Audio Quality Vote (Servlet)'
 	}
