@@ -264,7 +264,7 @@ public interface AudioQualityVoteDao extends SqlObject {
 	}
 
 	default void scanForNewEntries(long uid) {
-		AtomicInteger maxNewFiles = new AtomicInteger(10);
+		AtomicInteger maxNewFiles = new AtomicInteger(100);
 		Set<Long> already = new HashSet<>(audioDataAidsFor(uid));
 		Map<Long, Float> rankings = voteRankingsByAid(MIN_VOTES_FILTER);
 		List<AudioBytesInfo> entries = audioBytesInfoFor(0);
@@ -414,7 +414,8 @@ public interface AudioQualityVoteDao extends SqlObject {
 			+ " where" //
 			+ " (bad>0 OR poor>0 or good>0)" //
 			+ " group by file" //
-			+ " having votes >= :minVotes")
+			+ " having votes >= :minVotes"
+			+ " order by rand()")
 	@KeyColumn("aid")
 	@ValueColumn("ranking")
 	Map<Long, Float> voteRankingsByAid(@Bind("minVotes")int minVotes);
