@@ -260,7 +260,7 @@ public interface AudioQualityVoteDao extends SqlObject {
 			AudioData audioData = audioDataInfoByVid(vid);
 			Float ranking = rankings.get(audioData.getAid());
 			ranking = (ranking == null ? 0 : ranking);
-			if (!audioBytesInfoHasData(audioData.getAid()) || ranking < 0 || ranking >= .5) {
+			if (!audioBytesInfoHasData(audioData.getAid()) || ranking < -2 || ranking >= .5) {
 				removeVoteEntry(uid, vid);
 				iter.remove();
 			}
