@@ -51,6 +51,7 @@ public class MainMenu extends Composite implements UiView {
 	@UiField
 	protected MaterialLink lnkRecord;
 	public HandlerRegistration lnkRecord(Handler<Void> handler) {
+		lnkRecord.setEnabled(false);
 		return lnkRecord.addClickHandler((e)->handler.handle(null));
 	}
 	
@@ -127,6 +128,7 @@ public class MainMenu extends Composite implements UiView {
 		MaterialRadioButton btnPoor;
 		MaterialRadioButton btnGood;
 	}
+	
 	private List<Group> groups = new ArrayList<>();
 	public void setAudioDataList(AudioDataList list) {
 		if (list.getList().isEmpty()) {
@@ -190,7 +192,7 @@ public class MainMenu extends Composite implements UiView {
 			group.btnPoor=btnPoor;
 			btnPoor.setText("Poor");
 			c.add(btnPoor);
-			row.add(c);
+//			row.add(c);
 			
 			c = new MaterialColumn();
 			MaterialRadioButton btnGood = new MaterialRadioButton(radioButtonGroup);

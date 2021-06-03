@@ -181,14 +181,21 @@ public interface AudioQualityVoteDao extends SqlObject {
 	@RegisterBeanMapper(AudioBytesInfo.class)
 	List<AudioBytesInfo> audioBytesInfoFor(@Bind("uid")long uid);
 	
+	@SqlQuery("select aid, uid, file, txt, mime" //
+			+ " from aqv_audio order by aid")
+	@RegisterBeanMapper(AudioBytesInfo.class)
+	List<AudioBytesInfo> audioBytesInfo();
+	
 	@Transaction
 	default long addAudioBytesInfo(AudioBytesInfo info) {
 		deleteAudioBytesInfo(info);
 		return insertAudioBytesInfo(info);
 	}
-	@SqlUpdate("insert into aqv_audio (uid, file, txt, mime)"
-			+ " values"
-			+ " (:uid, :file, :txt, :mime)")
+	
+	@SqlUpdate("insert into aqv_audio (uid, file, txt, mime)" //
+			+ " select :uid, :file, :txt, :mime from (select 1) a" //
+			+ " where not exists" //
+			+ " (select 1 from aqv_audio where file=:file)")
 	@GetGeneratedKeys
 	long insertAudioBytesInfo(@BindBean AudioBytesInfo info);
 	
@@ -267,7 +274,7 @@ public interface AudioQualityVoteDao extends SqlObject {
 		AtomicInteger maxNewFiles = new AtomicInteger(100);
 		Set<Long> already = new HashSet<>(audioDataAidsFor(uid));
 		Map<Long, Float> rankings = voteRankingsByAid(MIN_VOTES_FILTER);
-		List<AudioBytesInfo> entries = audioBytesInfoFor(0);
+		List<AudioBytesInfo> entries = audioBytesInfo();
 		entries.forEach(f -> {
 			if (maxNewFiles.get() <= 0) {
 				return;
@@ -276,7 +283,7 @@ public interface AudioQualityVoteDao extends SqlObject {
 				return;
 			}
 			Float ranking = rankings.get(f.getAid());
-			if ((ranking == null ? 0 : ranking) < 0) {
+			if ((ranking == null ? 0 : ranking) < -2) {
 				return;
 			}
 			addPendingEntry(uid, f.getAid(), f.getFile(), f.getTxt());
@@ -291,13 +298,7 @@ public interface AudioQualityVoteDao extends SqlObject {
 			+ " (select 1 from aqv_votes where uid=:uid AND aid=:aid);"
 			+ " update aqv_votes" //
 			+ " set txt=:text, file=:file" //
-			+ " where uid=:uid AND aid=:aid" //
-			+ " AND (" //
-			+ " txt!=:text" //
-			+ " OR txt is null" //
-			+ " OR file!=:file" //
-			+ " OR file is null" //
-			+ " )")	
+			+ " where uid=:uid AND aid=:aid")
 	void addPendingEntry(@Bind("uid")long uid, @Bind("aid")Long aid, @Bind("file")String file, @Bind("text")String text);
 
 	@Transaction	

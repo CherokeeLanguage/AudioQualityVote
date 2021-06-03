@@ -5,6 +5,7 @@ import java.util.concurrent.CompletableFuture;
 
 import javax.inject.Inject;
 
+import org.apache.jasper.tagplugins.jstl.core.Url;
 import org.fusesource.restygwt.client.Defaults;
 import org.fusesource.restygwt.client.ServiceRoots;
 
@@ -23,6 +24,7 @@ import com.cherokeelessons.audio.quality.ui.RecordAudio;
 import com.cherokeelessons.audio.quality.ui.Settings;
 import com.google.gwt.core.client.Callback;
 import com.google.gwt.core.client.GWT;
+import com.google.gwt.http.client.URL;
 import com.google.gwt.user.client.ui.RootPanel;
 
 import elemental2.dom.DomGlobal;
@@ -251,7 +253,12 @@ public class AppPresenter {
 	private void getAudio(MainMenu view) {
 		loading.loading(true);
 		api.pendingAudio().thenAccept(list -> {
-			list.forEach((item) -> item.setUrl(audioUrl(item.getAid())));
+			list.forEach((item) -> {
+				Long aid = item.getAid();
+				String encoded = URL.encode(item.getTxt().replaceAll("\\s+", " ").trim());
+				String url = audioUrl(aid) + "?" + encoded;
+				item.setUrl(url);
+			});
 			view.setAudioDataList(list);
 			loading.loading(false);
 		});

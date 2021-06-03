@@ -4,12 +4,13 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
+import java.text.Normalizer;
+import java.text.Normalizer.Form;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.locks.ReentrantLock;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -23,6 +24,7 @@ import javax.ws.rs.core.Response.Status;
 import org.apache.commons.lang3.StringUtils;
 
 import com.cherokeelessons.audio.quality.db.AudioQualityVoteDao;
+import com.cherokeelessons.audio.quality.db.AudioQualityVoteFiles;
 import com.cherokeelessons.audio.quality.shared.AudioBytesInfo;
 import com.cherokeelessons.audio.quality.shared.AudioData;
 import com.cherokeelessons.audio.quality.shared.AudioDataList;
@@ -66,7 +68,47 @@ public class RestApiImpl implements RestApi {
 		return AudioQualityVoteDao.onDemand();
 	}
 
+	private static final ReentrantLock LOAD_CHECK = new ReentrantLock();
+
 	public RestApiImpl() {
+		Thread thread = new Thread(this::audioLoadCheck);
+		thread.setDaemon(true);
+		thread.start();
+	}
+
+	private void audioLoadCheck() {
+		try {
+			if (!LOAD_CHECK.tryLock()) {
+				return;
+			}
+			final String audioDataPath = AudioQualityVoteFiles.getFolder().getAbsolutePath();
+			try {
+				for (AudioData d : AudioQualityVoteFiles.getAudioData()) {
+					String file = d.getFile();
+					File dataFile = new File(file);
+					file = StringUtils.substringAfter(file, audioDataPath);
+					d.setFile(file);
+					if (dao().getAidForFile(file) != null) {
+						return;
+					}
+					AudioBytesInfo info = new AudioBytesInfo();
+					info.setFile(file);
+					info.setMime("audio/mpeg");
+					info.setTxt(Normalizer.normalize(d.getTxt().trim(), Form.NFC));
+					info.setUid(0);
+					long aid = dao().insertAudioBytesInfo(info);
+					if (aid<1) {
+						return;
+					}
+					dao().setAudioBytesData(aid, dataFile);
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			System.out.println("Audio Load Check - DONE");
+		} finally {
+			LOAD_CHECK.unlock();
+		}
 	}
 
 	@Override
@@ -196,7 +238,7 @@ public class RestApiImpl implements RestApi {
 			return null;
 		}
 		dao().setVote(uid, vid, bad, poor, good);
-		return dao().audioDataInfoByAid(vid);
+		return dao().audioDataInfoByVid(vid);
 	}
 
 	@Override
@@ -209,6 +251,9 @@ public class RestApiImpl implements RestApi {
 		for (Long vid : vids) {
 			list.getList().add(dao().audioDataInfoByVid(vid));
 		}
+		list.getList().forEach(item->{
+			item.setTxt(Normalizer.normalize(item.getTxt(), Form.NFC));
+		});
 		return list;
 	}
 
@@ -238,6 +283,7 @@ public class RestApiImpl implements RestApi {
 			csv.writeNext(header);
 			for (VoteResult result : voteResults) {
 				AudioBytesInfo info = dao().audioBytesInfo(result.getAid());
+				info.setTxt(Normalizer.normalize(info.getTxt(), Form.NFC));
 				String[] row = { //
 						result.getAid() + "", //
 						result.getBad() + "", //
@@ -358,7 +404,7 @@ public class RestApiImpl implements RestApi {
 		AudioBytesInfo info = new AudioBytesInfo();
 		info.setFile(file);
 		info.setMime(request.getContentType());
-		info.setTxt(text);
+		info.setTxt(Normalizer.normalize(text, Form.NFC));
 		info.setUid(uid);
 		info.setAid(dao().addAudioBytesInfo(info));
 		aid = info.getAid();
