@@ -2,8 +2,8 @@ plugins {
   id "java-library"
   id "eclipse-wtp"
   id "com.diffplug.eclipse.apt"
-  id "org.gretty"
   id "org.wisepersist.gwt"
+  id "org.gretty"
 }
 
 compileJava.options.encoding = 'UTF-8'
@@ -15,29 +15,15 @@ compileTestJava.options.release = 11
 java.toolchain.languageVersion = JavaLanguageVersion.of(11)
 java.toolchain.vendor = JvmVendorSpec.ADOPTOPENJDK
 
+gretty {
+	servletContainer = 'tomcat9'
+}
+
 allprojects {
 	repositories {
 		jcenter()
 		mavenCentral()
 		maven { url 'https://jitpack.io' }
-		//maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
-		//maven { url "https://repo.vertispan.com/gwt-snapshot" }
-	}
-	task "create-dirs" {
-		doLast{
-			sourceSets*.java.srcDirs*.each { it.mkdirs();new File(it, ".gitignore").createNewFile() }
-			sourceSets*.resources.srcDirs*.each { it.mkdirs();new File(it, ".gitignore").createNewFile() }
-		}
-	}
-	eclipseJdt {
-		doLast{
-		    File f = file('.settings/org.eclipse.core.resources.prefs')
-		    f.write('eclipse.preferences.version=1\n')
-		    f.append('encoding/<project>=utf-8')
-		    f = file('.settings/org.eclipse.core.runtime.prefs')
-		    f.write('eclipse.preferences.version=1\n')
-		    f.append('line.separator=\\n\n')
-		}
 	}
 }
 

@@ -68,10 +68,7 @@ public class AudioQualityVoteFiles {
 				return;
 			}
 			Properties props = new Properties();
-			File file = new File(Consts.DEFAULT_PROPERTIES_FILE);
-			if (!file.exists()) {
-				file = new File(Consts.ALT_PROPERTIES_FILE);
-			}
+			File file = AppPathConfig.PROPERTIES_FILE;
 			try (FileInputStream in = new FileInputStream(file.getAbsoluteFile())) {
 				props.load(in);
 			} catch (IOException e) {

@@ -23,6 +23,7 @@ import javax.ws.rs.core.Response.Status;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.cherokeelessons.audio.quality.db.AppPathConfig;
 import com.cherokeelessons.audio.quality.db.AudioQualityVoteDao;
 import com.cherokeelessons.audio.quality.db.AudioQualityVoteFiles;
 import com.cherokeelessons.audio.quality.shared.AudioBytesInfo;
@@ -65,7 +66,7 @@ public class RestApiImpl implements RestApi {
 	protected HttpHeaders headers;
 
 	private AudioQualityVoteDao dao() {
-		return AudioQualityVoteDao.onDemand();
+		return AudioQualityVoteDao.onDemand(AppPathConfig.TABLE_PREFIX);
 	}
 
 	private static final ReentrantLock LOAD_CHECK = new ReentrantLock();
@@ -98,17 +99,19 @@ public class RestApiImpl implements RestApi {
 				info.setMime("audio/mpeg");
 				info.setTxt(Normalizer.normalize(d.getTxt().trim(), Form.NFC));
 				info.setUid(0);
-				long aid = dao().insertAudioBytesInfo(info);
+				long aid = dao().insertAudioBytesInfo(AppPathConfig.TABLE_PREFIX, info);
 				if (aid < 1) {
 					continue;
 				}
-				dao().setAudioBytesData(aid, dataFile);
+				dao().setAudioBytesData(AppPathConfig.TABLE_PREFIX, aid, dataFile);
 			}
 			System.out.println("Audio Load Check - DONE");
 		} catch (Exception e) {
 			e.printStackTrace();
 		} finally {
-			LOAD_CHECK.unlock();
+			if (LOAD_CHECK.isHeldByCurrentThread()) {
+				LOAD_CHECK.unlock();
+			}
 		}
 	}
 
@@ -132,18 +135,18 @@ public class RestApiImpl implements RestApi {
 		}
 		String oauthId = token.getPayload().getSubject();
 		String email = token.getPayload().getEmail();
-		dao().addUser("Google", oauthId, email);
-		dao().updateEmail("Google", oauthId, email);
-		long uid = dao().uidByEmail(email);
-		dao().updateLastLogin(uid);
-		dao().scanForNewEntries(uid);
+		dao().addUser(AppPathConfig.TABLE_PREFIX, "Google", oauthId, email);
+		dao().updateEmail(AppPathConfig.TABLE_PREFIX, "Google", oauthId, email);
+		long uid = dao().uidByEmail(AppPathConfig.TABLE_PREFIX, email);
+		dao().updateLastLogin(AppPathConfig.TABLE_PREFIX, uid);
+		dao().scanForNewEntries(AppPathConfig.TABLE_PREFIX, uid);
 		UserInfo info = new UserInfo();
 		info.setUid(uid);
 		info.setEmail(email);
-		info.setSessionId(dao().newSessionId(uid));
-		int sessionCount = dao().sessionCount(uid);
+		info.setSessionId(dao().newSessionId(AppPathConfig.TABLE_PREFIX, uid));
+		int sessionCount = dao().sessionCount(AppPathConfig.TABLE_PREFIX, uid);
 		if (sessionCount > 5) {
-			dao().deleteOldestSessions(uid, sessionCount - 5);
+			dao().deleteOldestSessions(AppPathConfig.TABLE_PREFIX, uid, sessionCount - 5);
 		}
 		return info;
 	}
@@ -153,7 +156,7 @@ public class RestApiImpl implements RestApi {
 		if (!isSessionId(uid, sessionId)) {
 			return;
 		}
-		dao().deleteSessionId(uid, sessionId);
+		dao().deleteSessionId(AppPathConfig.TABLE_PREFIX, uid, sessionId);
 	}
 
 	@Override
@@ -164,7 +167,7 @@ public class RestApiImpl implements RestApi {
 		} catch (NumberFormatException e) {
 			return Response.status(Status.NOT_FOUND).build();
 		}
-		AudioBytesInfo data = dao().audioBytesInfo(aid);
+		AudioBytesInfo data = dao().audioBytesInfo(AppPathConfig.TABLE_PREFIX, aid);
 		if (data == null) {
 			System.err.println("No entry in db for aid " + aid);
 			return Response.status(Status.NOT_FOUND).build();
@@ -178,7 +181,7 @@ public class RestApiImpl implements RestApi {
 			String audioBytesMime = StringUtils.defaultString(dao().audioBytesMime(aid), "audio/mpeg");
 			response.setHeader("Cache-Control", "public,max-age=" + (60 * 60 * 24));
 			response.setContentType(audioBytesMime);
-			dao().audioBytesStream(aid, response.getOutputStream());
+			dao().audioBytesStream(AppPathConfig.TABLE_PREFIX, aid, response.getOutputStream());
 			return Response.ok().type(audioBytesMime).build();
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -191,7 +194,7 @@ public class RestApiImpl implements RestApi {
 		if (!isSessionId(uid, sessionId) || aid == null) {
 			return null;
 		}
-		return dao().audioDataInfoByAid(aid);
+		return dao().audioDataInfoByAid(AppPathConfig.TABLE_PREFIX, aid);
 	}
 
 	@Override
@@ -205,7 +208,7 @@ public class RestApiImpl implements RestApi {
 		AudioDataList list = new AudioDataList();
 		do {
 			list.getList().clear();
-			List<Long> pending = dao().pendingVids(uid);
+			List<Long> pending = dao().pendingVids(AppPathConfig.TABLE_PREFIX, uid);
 			if (pending.isEmpty()) {
 				return list;
 			}
@@ -214,7 +217,7 @@ public class RestApiImpl implements RestApi {
 				pending = pending.subList(0, qty);
 			}
 			for (Long vid : pending) {
-				list.getList().add(dao().audioDataInfoByVid(vid));
+				list.getList().add(dao().audioDataInfoByVid(AppPathConfig.TABLE_PREFIX, vid));
 			}
 		} while (list.getList().isEmpty());
 		return list;
@@ -225,9 +228,9 @@ public class RestApiImpl implements RestApi {
 		if (uid == null || sessionId == null) {
 			return false;
 		}
-		if (Boolean.TRUE == dao().isSessionId(uid, sessionId)) {
-			dao().updateLastSeen(uid, sessionId);
-			dao().deleteOldSessions();
+		if (Boolean.TRUE == dao().isSessionId(AppPathConfig.TABLE_PREFIX, uid, sessionId)) {
+			dao().updateLastSeen(AppPathConfig.TABLE_PREFIX, uid, sessionId);
+			dao().deleteOldSessions(AppPathConfig.TABLE_PREFIX);
 			return true;
 		}
 		return false;
@@ -238,8 +241,8 @@ public class RestApiImpl implements RestApi {
 		if (!isSessionId(uid, sessionId)) {
 			return null;
 		}
-		dao().setVote(uid, vid, bad, poor, good);
-		return dao().audioDataInfoByVid(vid);
+		dao().setVote(AppPathConfig.TABLE_PREFIX, uid, vid, bad, poor, good);
+		return dao().audioDataInfoByVid(AppPathConfig.TABLE_PREFIX, vid);
 	}
 
 	@Override
@@ -247,10 +250,10 @@ public class RestApiImpl implements RestApi {
 		if (!isSessionId(uid, sessionId) || page == null || size == null) {
 			return null;
 		}
-		List<Long> vids = dao().audioDataVidsFor(uid);
+		List<Long> vids = dao().audioDataVidsFor(AppPathConfig.TABLE_PREFIX, uid);
 		AudioDataList list = new AudioDataList();
 		for (Long vid : vids) {
-			list.getList().add(dao().audioDataInfoByVid(vid));
+			list.getList().add(dao().audioDataInfoByVid(AppPathConfig.TABLE_PREFIX, vid));
 		}
 		list.getList().forEach(item -> {
 			item.setTxt(Normalizer.normalize(item.getTxt(), Form.NFC));
@@ -278,12 +281,12 @@ public class RestApiImpl implements RestApi {
 
 	@Override
 	public Response audioQualityVotesCsv() {
-		List<VoteResult> voteResults = dao().audioVoteResults();
+		List<VoteResult> voteResults = dao().audioVoteResults(AppPathConfig.TABLE_PREFIX);
 		String[] header = { "Id", "Bad", "Poor", "Good", "Ranking", "Votes", "Text", "File" };
 		try (StringWriter writer = new StringWriter(); CSVWriter csv = new CSVWriter(writer)) {
 			csv.writeNext(header);
 			for (VoteResult result : voteResults) {
-				AudioBytesInfo info = dao().audioBytesInfo(result.getAid());
+				AudioBytesInfo info = dao().audioBytesInfo(AppPathConfig.TABLE_PREFIX, result.getAid());
 				info.setTxt(Normalizer.normalize(info.getTxt(), Form.NFC));
 				String[] row = { //
 						result.getAid() + "", //
@@ -311,8 +314,8 @@ public class RestApiImpl implements RestApi {
 			return null;
 		}
 		UserVoteCount counts = new UserVoteCount();
-		counts.setPending(dao().userPendingVoteCount(uid));
-		counts.setVoted(dao().userCompletedVoteCount(uid));
+		counts.setPending(dao().userPendingVoteCount(AppPathConfig.TABLE_PREFIX, uid));
+		counts.setVoted(dao().userCompletedVoteCount(AppPathConfig.TABLE_PREFIX, uid));
 		counts.setUid(uid);
 		return counts;
 	}
@@ -323,11 +326,11 @@ public class RestApiImpl implements RestApi {
 			return null;
 		}
 		TopVoters topVoters = new TopVoters();
-		List<Long> uids = dao().topUsersByVoteCounts(3);
+		List<Long> uids = dao().topUsersByVoteCounts(AppPathConfig.TABLE_PREFIX, 3);
 		for (Long topUid : uids) {
 			UserVoteCount counts = new UserVoteCount();
-			counts.setPending(dao().userPendingVoteCount(topUid));
-			counts.setVoted(dao().userCompletedVoteCount(topUid));
+			counts.setPending(dao().userPendingVoteCount(AppPathConfig.TABLE_PREFIX, topUid));
+			counts.setVoted(dao().userCompletedVoteCount(AppPathConfig.TABLE_PREFIX, topUid));
 			counts.setUid(topUid);
 			topVoters.getTopVoters().add(counts);
 		}
@@ -340,7 +343,7 @@ public class RestApiImpl implements RestApi {
 		if (!isSessionId(uid, sessionId)) {
 			return;
 		}
-		dao().deleteUserById(uid);
+		dao().deleteUserById(AppPathConfig.TABLE_PREFIX, uid);
 	}
 
 	@Override
@@ -349,7 +352,7 @@ public class RestApiImpl implements RestApi {
 			return null;
 		}
 		UserAudioList list = new UserAudioList();
-		list.setList(dao().audioBytesInfoFor(uid));
+		list.setList(dao().audioBytesInfoFor(AppPathConfig.TABLE_PREFIX, uid));
 		return list;
 	}
 
@@ -407,10 +410,10 @@ public class RestApiImpl implements RestApi {
 		info.setMime(request.getContentType());
 		info.setTxt(Normalizer.normalize(text, Form.NFC));
 		info.setUid(uid);
-		info.setAid(dao().addAudioBytesInfo(info));
+		info.setAid(dao().addAudioBytesInfo(AppPathConfig.TABLE_PREFIX, info));
 		aid = info.getAid();
 		System.out.println("New audio id: " + info.getAid());
-		dao().setAudioBytesData(aid, is);
+		dao().setAudioBytesData(AppPathConfig.TABLE_PREFIX, aid, is);
 		return info;
 	}
 

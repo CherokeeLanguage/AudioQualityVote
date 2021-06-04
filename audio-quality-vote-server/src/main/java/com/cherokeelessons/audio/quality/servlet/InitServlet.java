@@ -1,15 +1,15 @@
 package com.cherokeelessons.audio.quality.servlet;
 
-import java.io.File;
-import java.util.List;
-
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 
+import org.apache.commons.lang3.StringUtils;
+
+import com.cherokeelessons.audio.quality.db.AppPathConfig;
 import com.cherokeelessons.audio.quality.db.AudioQualityVoteDao;
-import com.cherokeelessons.audio.quality.db.AudioQualityVoteFiles;
-import com.cherokeelessons.audio.quality.shared.AudioBytesInfo;
 
 @SuppressWarnings("serial")
 @WebServlet(value = "/init-servlet", loadOnStartup = 1)
@@ -17,36 +17,18 @@ public class InitServlet extends HttpServlet {
 	@Override
 	public void init() throws ServletException {
 		super.init();
-//		new Thread(this::migrate).start();
-	}
-
-	private void migrate() {
-		System.out.println("Migration start.");
-		List<AudioBytesInfo> temp = dao().audioVoteEntriesForMigration();
-		temp.forEach(data -> {
-			File file = new File(AudioQualityVoteFiles.getFolder(), data.getFile());
-			if (!file.exists()) {
-				return;
-			}
-			data.setUid(0);
-			data.setMime("audio/mpeg");
-			if (dao().audioBytesInfoExistsFor(data.getUid(), data.getFile())) {
-				Long aid = dao().getAidForFile(data.getFile());
-				if (aid != null && aid > 0) {
-					System.out.println("Migrating " + file.getName() + ".");
-					dao().setAudioIdForMatchingVotes(aid, data.getFile());
-				}
-				return;
-			}
-			long aid = dao().addAudioBytesInfo(data);
-			if (aid < 1) {
-				return;
-			}
-			System.out.println("Migrating " + file.getName() + ".");
-			dao().setAudioBytesData(aid, file);
-			dao().setAudioIdForMatchingVotes(aid, data.getFile());
-		});
-		System.out.println("Migration complete.");
+		ServletConfig config = getServletConfig();
+		ServletContext context = config.getServletContext();
+		String contextPath = context.getContextPath();
+		if (contextPath.isEmpty()) {
+			contextPath = "Audio-Quality-Vote";
+		} else {
+			contextPath = StringUtils.strip(contextPath, "/");
+		}
+		System.out.println("SERVLET CONTEXT: " + contextPath);
+		AppPathConfig.findConfigFile(context.getRealPath("/"), contextPath);
+		System.out.println(context.getRealPath("/"));
+		System.out.println(AppPathConfig.PROPERTIES_FILE.getAbsolutePath());
 	}
 
 	@Override
@@ -56,6 +38,6 @@ public class InitServlet extends HttpServlet {
 	}
 
 	private AudioQualityVoteDao dao() {
-		return AudioQualityVoteDao.onDemand();
+		return AudioQualityVoteDao.onDemand(AppPathConfig.TABLE_PREFIX);
 	}
 }

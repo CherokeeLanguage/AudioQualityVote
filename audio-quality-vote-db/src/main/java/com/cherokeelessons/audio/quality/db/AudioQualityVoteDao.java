@@ -29,6 +29,7 @@ import org.jdbi.v3.sqlobject.config.RegisterBeanMapper;
 import org.jdbi.v3.sqlobject.config.ValueColumn;
 import org.jdbi.v3.sqlobject.customizer.Bind;
 import org.jdbi.v3.sqlobject.customizer.BindBean;
+import org.jdbi.v3.sqlobject.customizer.Define;
 import org.jdbi.v3.sqlobject.statement.GetGeneratedKeys;
 import org.jdbi.v3.sqlobject.statement.SqlQuery;
 import org.jdbi.v3.sqlobject.statement.SqlScript;
@@ -46,10 +47,7 @@ public interface AudioQualityVoteDao extends SqlObject {
 	public static final int NEW_ENTRIES_COUNT = 5;
 	int MIN_VOTES_FILTER = 3;
 
-	static AudioQualityVoteDao onDemand() {
-		if (State.dao != null) {
-			return State.dao;
-		}
+	static AudioQualityVoteDao onDemand(String tablePrefix) {
 		State.loadPropertiesFile();
 
 		final HikariConfig config = new HikariConfig();
@@ -71,7 +69,7 @@ public interface AudioQualityVoteDao extends SqlObject {
 		jdbi.setTransactionHandler(transactionHandler); // auto retry transactions that deadlock
 		jdbi.installPlugin(new SqlObjectPlugin());
 		AudioQualityVoteDao onDemand = jdbi.onDemand(AudioQualityVoteDao.class);
-		onDemand.init();
+		onDemand.init(tablePrefix);
 		State.dao = onDemand;
 		return onDemand;
 	}
@@ -83,29 +81,29 @@ public interface AudioQualityVoteDao extends SqlObject {
 	}
 
 	@SqlScript("alter database character set = 'utf8mb4'")
-	@SqlScript("create table if not exists aqv_users" //
+	@SqlScript("create table if not exists <table>_users" //
 			+ " (uid serial, oauth_provider varchar(254)," //
 			+ " oauth_id varchar(254), email varchar(254)," //
 			+ " modified datetime on update NOW()," //
 			+ " created datetime default NOW()" //
 			+ ")")
-	@SqlScript("create index if not exists oauth_provider on aqv_users(oauth_provider(4))")
-	@SqlScript("create index if not exists oauth_id on aqv_users(oauth_id(4))")
-	@SqlScript("create index if not exists email on aqv_users(email(4))")
-	@SqlScript("alter table aqv_users add column if not exists last_login datetime")
+	@SqlScript("create index if not exists oauth_provider on <table>_users(oauth_provider(4))")
+	@SqlScript("create index if not exists oauth_id on <table>_users(oauth_id(4))")
+	@SqlScript("create index if not exists email on <table>_users(email(4))")
+	@SqlScript("alter table <table>_users add column if not exists last_login datetime")
 
-	@SqlScript("create table if not exists aqv_sessions" //
+	@SqlScript("create table if not exists <table>_sessions" //
 			+ " (sid serial, uid bigint unsigned, session varchar(254)," //
 			+ " last_seen datetime default NOW() on update NOW()," //
 			+ " modified datetime on update NOW()," //
 			+ " created datetime default NOW()" //
 			+ ")")
-	@SqlScript("create index if not exists uid on aqv_sessions(uid)")
-	@SqlScript("create index if not exists session on aqv_sessions(session(16))")
-	@SqlScript("create index if not exists last_seen on aqv_sessions(last_seen)")
+	@SqlScript("create index if not exists uid on <table>_sessions(uid)")
+	@SqlScript("create index if not exists session on <table>_sessions(session(16))")
+	@SqlScript("create index if not exists last_seen on <table>_sessions(last_seen)")
 
 	//
-	@SqlScript("create table if not exists aqv_votes" //
+	@SqlScript("create table if not exists <table>_votes" //
 			+ " (vid serial," //
 			+ " uid bigint unsigned," //
 			+ " file varchar(254)," //
@@ -113,31 +111,31 @@ public interface AudioQualityVoteDao extends SqlObject {
 			+ " poor int default 0," //
 			+ " bad int default 0," + " modified datetime on update NOW()," //
 			+ " created datetime default NOW())") //
-	@SqlScript("create index if not exists uid on aqv_votes(uid)")
-	@SqlScript("create index if not exists file on aqv_votes(file(32))")
-	@SqlScript("create index if not exists txt on aqv_votes(txt(8))")
-	@SqlScript("create index if not exists modified on aqv_votes(modified)")
-	@SqlScript("create index if not exists created on aqv_votes(created)")
+	@SqlScript("create index if not exists uid on <table>_votes(uid)")
+	@SqlScript("create index if not exists file on <table>_votes(file(32))")
+	@SqlScript("create index if not exists txt on <table>_votes(txt(8))")
+	@SqlScript("create index if not exists modified on <table>_votes(modified)")
+	@SqlScript("create index if not exists created on <table>_votes(created)")
 
-	@SqlScript("alter table aqv_votes add column if not exists aid bigint unsigned")
-	@SqlScript("create index if not exists aid on aqv_votes(aid)")
+	@SqlScript("alter table <table>_votes add column if not exists aid bigint unsigned")
+	@SqlScript("create index if not exists aid on <table>_votes(aid)")
 
-	@SqlScript("create table if not exists aqv_audio" //
+	@SqlScript("create table if not exists <table>_audio" //
 			+ " (aid serial," //
 			+ " uid bigint unsigned," //
 			+ " file text," //
 			+ " txt text," + " mime text," + " data longblob," + " modified datetime on update NOW()," //
 			+ " created datetime default NOW())") //
-	@SqlScript("create index if not exists uid on aqv_audio(uid)")
-	@SqlScript("create index if not exists file on aqv_audio(file(32))")
-	@SqlScript("create index if not exists txt on aqv_audio(txt(8))")
-	@SqlScript("create index if not exists mime on aqv_audio(mime(16))")
-	@SqlScript("create index if not exists modified on aqv_audio(modified)")
-	@SqlScript("create index if not exists created on aqv_audio(created)")
-	void init();
+	@SqlScript("create index if not exists uid on <table>_audio(uid)")
+	@SqlScript("create index if not exists file on <table>_audio(file(32))")
+	@SqlScript("create index if not exists txt on <table>_audio(txt(8))")
+	@SqlScript("create index if not exists mime on <table>_audio(mime(16))")
+	@SqlScript("create index if not exists modified on <table>_audio(modified)")
+	@SqlScript("create index if not exists created on <table>_audio(created)")
+	void init(@Define("table")String tablePrefix);
 
-	default void audioBytesStream(long aid, OutputStream os) throws IOException {
-		AudioBytesObject data = audioBytesObject(aid);
+	default void audioBytesStream(String tablePrefix, long aid, OutputStream os) throws IOException {
+		AudioBytesObject data = audioBytesObject(tablePrefix, aid);
 		if (data == null || data.getData() == null) {
 			data = new AudioBytesObject();
 			data.setData(new byte[0]);
@@ -147,8 +145,8 @@ public interface AudioQualityVoteDao extends SqlObject {
 		}
 	}
 
-	@SqlQuery("select data from aqv_audio where aid=:aid")
-	byte[] audioBytes(@Bind("aid") long aid);
+	@SqlQuery("select data from <table>_audio where aid=:aid")
+	byte[] audioBytes(@Define("table")String tablePrefix, @Bind("aid") long aid);
 
 	class AudioBytesObject { // needed for hacky work around to get binary data out of DB
 		private byte[] data;
@@ -163,117 +161,118 @@ public interface AudioQualityVoteDao extends SqlObject {
 	}
 
 	@RegisterBeanMapper(AudioBytesObject.class)
-	@SqlQuery("select data from aqv_audio where aid=:aid")
-	AudioBytesObject audioBytesObject(@Bind("aid") long aid);
+	@SqlQuery("select data from <table>_audio where aid=:aid")
+	AudioBytesObject audioBytesObject(@Define("table")String tablePrefix, @Bind("aid") long aid);
 
-	@SqlUpdate("delete from aqv_audio where aid=:aid")
-	void deleteAudioBytes(@Bind("aid") long aid);
+	@SqlUpdate("delete from <table>_audio where aid=:aid")
+	void deleteAudioBytes(@Define("table")String tablePrefix, @Bind("aid") long aid);
 
-	@SqlUpdate("delete from aqv_audio where uid=:uid")
-	void deleteAudioBytesByUid(@Bind("uid") long uid);
-
-	@SqlQuery("select aid, uid, file, txt, mime" //
-			+ " from aqv_audio where aid=:aid")
-	@RegisterBeanMapper(AudioBytesInfo.class)
-	AudioBytesInfo audioBytesInfo(@Bind("aid") long aid);
+	@SqlUpdate("delete from <table>_audio where uid=:uid")
+	void deleteAudioBytesByUid(@Define("table")String tablePrefix, @Bind("uid") long uid);
 
 	@SqlQuery("select aid, uid, file, txt, mime" //
-			+ " from aqv_audio where uid=:uid")
+			+ " from <table>_audio where aid=:aid")
 	@RegisterBeanMapper(AudioBytesInfo.class)
-	List<AudioBytesInfo> audioBytesInfoFor(@Bind("uid") long uid);
+	AudioBytesInfo audioBytesInfo(@Define("table")String tablePrefix, @Bind("aid") long aid);
 
 	@SqlQuery("select aid, uid, file, txt, mime" //
-			+ " from aqv_audio order by aid")
+			+ " from <table>_audio where uid=:uid")
 	@RegisterBeanMapper(AudioBytesInfo.class)
-	List<AudioBytesInfo> audioBytesInfo();
+	List<AudioBytesInfo> audioBytesInfoFor(@Define("table")String tablePrefix, @Bind("uid") long uid);
+
+	@SqlQuery("select aid, uid, file, txt, mime" //
+			+ " from <table>_audio order by aid")
+	@RegisterBeanMapper(AudioBytesInfo.class)
+	List<AudioBytesInfo> audioBytesInfo(@Define("table")String tablePrefix);
 
 	@Transaction
-	default long addAudioBytesInfo(AudioBytesInfo info) {
-		deleteAudioBytesInfo(info);
-		return insertAudioBytesInfo(info);
+	default long addAudioBytesInfo(String tablePrefix, AudioBytesInfo info) {
+		deleteAudioBytesInfo(tablePrefix, info);
+		return insertAudioBytesInfo(tablePrefix, info);
 	}
 
-	@SqlUpdate("insert into aqv_audio (uid, file, txt, mime)" //
+	@SqlUpdate("insert into <table>_audio (uid, file, txt, mime)" //
 			+ " select :uid, :file, :txt, :mime from (select 1) a" //
 			+ " where not exists" //
-			+ " (select 1 from aqv_audio where file=:file)")
+			+ " (select 1 from <table>_audio where file=:file)")
 	@GetGeneratedKeys
-	long insertAudioBytesInfo(@BindBean AudioBytesInfo info);
+	long insertAudioBytesInfo(@Define("table")String tablePrefix, @BindBean AudioBytesInfo info);
 
-	@SqlUpdate("delete from aqv_audio where uid=:uid and file=:file")
-	void deleteAudioBytesInfo(@BindBean AudioBytesInfo info);
+	@SqlUpdate("delete from <table>_audio where uid=:uid and file=:file")
+	void deleteAudioBytesInfo(@Define("table")String tablePrefix, @BindBean AudioBytesInfo info);
 
-	@SqlUpdate("update aqv_audio set data=:data where aid=:aid")
-	void setAudioBytesData(@Bind("aid") long aid, @Bind("data") byte[] data);
+	@SqlUpdate("update <table>_audio set data=:data where aid=:aid")
+	void setAudioBytesData(@Define("table")String tablePrefix, @Bind("aid") long aid, @Bind("data") byte[] data);
 
-	default void setAudioBytesData(long aid, InputStream data) {
+	default void setAudioBytesData(@Define("table")String tablePrefix, long aid, InputStream data) {
 		useHandle(h -> {
-			h.createUpdate("update aqv_audio set data=:data where aid=:aid") //
+			h.createUpdate("update <table>_audio set data=:data where aid=:aid") //
+			.define("table", tablePrefix) //
 					.bind("data", new ServletInputStreamArgument(data)) //
 					.bind("aid", aid) //
 					.execute();
 		});
 	}
 
-	default void setAudioBytesData(long aid, File file) {
+	default void setAudioBytesData(String tablePrefix, long aid, File file) {
 		try (FileInputStream fis = new FileInputStream(file)) {
-			setAudioBytesData(aid, fis);
+			setAudioBytesData(tablePrefix, aid, fis);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
 	}
 
 	@SqlQuery("select *" //
-			+ " from aqv_audio where" //
+			+ " from <table>_audio where" //
 			+ " aid=:aid")
 	@RegisterBeanMapper(AudioData.class)
-	AudioData audioDataInfoByAid(@Bind("aid") long aid);
+	AudioData audioDataInfoByAid(@Define("table")String tablePrefix, @Bind("aid") long aid);
 
 	@SqlQuery("select *" //
-			+ " from aqv_votes where" //
+			+ " from <table>_votes where" //
 			+ " vid=:vid")
 	@RegisterBeanMapper(AudioData.class)
-	AudioData audioDataInfoByVid(@Bind("vid") long vid);
+	AudioData audioDataInfoByVid(@Define("table")String tablePrefix, @Bind("vid") long vid);
 
-	@SqlQuery("select vid from aqv_votes where aid=:aid and uid=:uid limit 1")
-	Long audioDataVid(@Bind("uid") Long uid, @Bind("aid") Long aid);
+	@SqlQuery("select vid from <table>_votes where aid=:aid and uid=:uid limit 1")
+	Long audioDataVid(@Define("table")String tablePrefix, @Bind("uid") Long uid, @Bind("aid") Long aid);
 
 	@SqlQuery("select *" //
-			+ " from aqv_votes" //
+			+ " from <table>_votes" //
 			+ " where aid is null OR aid < 1")
 	@RegisterBeanMapper(AudioBytesInfo.class)
-	List<AudioBytesInfo> audioVoteEntriesForMigration();
+	List<AudioBytesInfo> audioVoteEntriesForMigration(@Define("table")String tablePrefix);
 
-	@SqlQuery("select vid from aqv_votes where " + " uid=:uid AND good=0 AND poor=0 AND bad=0")
-	List<Long> undecidedVids(@Bind("uid") long uid);
+	@SqlQuery("select vid from <table>_votes where " + " uid=:uid AND good=0 AND poor=0 AND bad=0")
+	List<Long> undecidedVids(@Define("table")String tablePrefix, @Bind("uid") long uid);
 
 	@Transaction
-	default List<Long> pendingVids(long uid) {
-		Map<Long, Float> rankings = voteRankingsByAid(MIN_VOTES_FILTER);
-		List<Long> undecided = undecidedVids(uid);
+	default List<Long> pendingVids(String tablePrefix, long uid) {
+		Map<Long, Float> rankings = voteRankingsByAid(tablePrefix, MIN_VOTES_FILTER);
+		List<Long> undecided = undecidedVids(tablePrefix, uid);
 		if (undecided.size()<NEW_ENTRIES_COUNT*2) {
-			scanForNewEntries(uid);
-			undecided = undecidedVids(uid);
+			scanForNewEntries(tablePrefix, uid);
+			undecided = undecidedVids(tablePrefix, uid);
 		}
 		Iterator<Long> iter = undecided.iterator();
 		while (iter.hasNext()) {
 			Long vid = iter.next();
-			AudioData audioData = audioDataInfoByVid(vid);
+			AudioData audioData = audioDataInfoByVid(tablePrefix, vid);
 			Float ranking = rankings.get(audioData.getAid());
 			ranking = (ranking == null ? 0 : ranking);
 			if (!audioBytesInfoHasData(audioData.getAid()) || ranking < -2 || ranking > 1) {
-				removeVoteEntry(uid, vid);
+				removeVoteEntry(tablePrefix, uid, vid);
 				iter.remove();
 			}
 		}
 		return undecided;
 	}
 
-	default void scanForNewEntries(long uid) {
+	default void scanForNewEntries(String tablePrefix, long uid) {
 		AtomicInteger maxNewFiles = new AtomicInteger(NEW_ENTRIES_COUNT);
-		Set<Long> already = new HashSet<>(audioDataAidsFor(uid));
-		Map<Long, Float> rankings = voteRankingsByAid(MIN_VOTES_FILTER);
-		List<AudioBytesInfo> entries = audioBytesInfo();
+		Set<Long> already = new HashSet<>(audioDataAidsFor(tablePrefix, uid));
+		Map<Long, Float> rankings = voteRankingsByAid(tablePrefix, MIN_VOTES_FILTER);
+		List<AudioBytesInfo> entries = audioBytesInfo(tablePrefix);
 		Collections.shuffle(entries);
 		entries.forEach(f -> {
 			if (maxNewFiles.get() <= 0) {
@@ -287,21 +286,22 @@ public interface AudioQualityVoteDao extends SqlObject {
 			if (ranking < -2 || ranking > 1) {
 				return;
 			}
-			addPendingEntry(uid, f.getAid(), f.getFile(), f.getTxt());
+			addPendingEntry(tablePrefix, uid, f.getAid(), f.getFile(), f.getTxt());
 			maxNewFiles.decrementAndGet();
 		});
 	}
 
 	@Transaction
-	@SqlUpdate("insert into aqv_votes (uid, aid)" + " select :uid, :aid from (select 1) b" + " where not exists"
-			+ " (select 1 from aqv_votes where uid=:uid AND aid=:aid);" + " update aqv_votes" //
+	@SqlUpdate("insert into <table>_votes (uid, aid)" + " select :uid, :aid from (select 1) b" + " where not exists"
+			+ " (select 1 from <table>_votes where uid=:uid AND aid=:aid);" + " update <table>_votes" //
 			+ " set txt=:text, file=:file" //
 			+ " where uid=:uid AND aid=:aid")
-	void addPendingEntry(@Bind("uid") long uid, @Bind("aid") Long aid, @Bind("file") String file,
+	void addPendingEntry(@Define("table")String tablePrefix, //
+			@Bind("uid") long uid, @Bind("aid") Long aid, @Bind("file") String file,
 			@Bind("text") String text);
 
 	@Transaction
-	default String newSessionId(long uid) {
+	default String newSessionId(String tablePrefix, long uid) {
 		BigInteger no;
 		String input = uid + "." + System.currentTimeMillis() + "." + new Random().nextLong();
 		try {
@@ -313,26 +313,27 @@ public interface AudioQualityVoteDao extends SqlObject {
 					.add(BigInteger.valueOf(new Random().nextLong()));
 		}
 		String sessionId = no.toString(Character.MAX_RADIX);
-		insertSessionId(uid, sessionId);
+		insertSessionId(tablePrefix, uid, sessionId);
 		return sessionId;
 	}
 
 	@Transaction
-	@SqlUpdate("insert into aqv_sessions (uid, session)" //
+	@SqlUpdate("insert into <table>_sessions (uid, session)" //
 			+ " select :uid, :sessionId from (select 1) b" //
 			+ " where not exists" //
-			+ " (select 1 from aqv_sessions where uid=:uid AND session=:sessionId)")
-	void insertSessionId(@Bind("uid") long uid, @Bind("sessionId") String sessionId);
+			+ " (select 1 from <table>_sessions where uid=:uid AND session=:sessionId)")
+	void insertSessionId(@Define("table")String tablePrefix, @Bind("uid") long uid, @Bind("sessionId") String sessionId);
 
-	@SqlQuery("select count(*)>0 from aqv_sessions" //
+	@SqlQuery("select count(*)>0 from <table>_sessions" //
 			+ " where uid=:uid AND session=:sessionId")
-	boolean isSessionId(@Bind("uid") long uid, @Bind("sessionId") String sessionId);
+	boolean isSessionId(@Define("table")String tablePrefix, @Bind("uid") long uid, @Bind("sessionId") String sessionId);
 
-	@SqlUpdate("delete from aqv_sessions" //
+	@SqlUpdate("delete from <table>_sessions" //
 			+ " where uid=:uid AND session=:sessionId")
-	void deleteSessionId(@Bind("uid") long uid, @Bind("sessionId") String sessionId);
+	void deleteSessionId(@Define("table")String tablePrefix, @Bind("uid") long uid, @Bind("sessionId") String sessionId);
 
 	class State {
+		protected static String tablePrefix;
 		protected static HikariDataSource ds;
 		protected static AudioQualityVoteDao dao;
 		protected static String jdbcUrl;
@@ -345,10 +346,7 @@ public interface AudioQualityVoteDao extends SqlObject {
 				return;
 			}
 			properties = new Properties();
-			File file = new File(Consts.DEFAULT_PROPERTIES_FILE);
-			if (!file.exists()) {
-				file = new File(Consts.ALT_PROPERTIES_FILE);
-			}
+			File file = AppPathConfig.PROPERTIES_FILE;
 			try (FileInputStream in = new FileInputStream(file.getAbsoluteFile())) {
 				properties.load(in);
 			} catch (IOException e) {
@@ -361,130 +359,130 @@ public interface AudioQualityVoteDao extends SqlObject {
 		}
 	}
 
-	@SqlQuery("select uid from aqv_users" //
+	@SqlQuery("select uid from <table>_users" //
 			+ " where email=:email")
-	long uidByEmail(@Bind("email") String email);
+	long uidByEmail(@Define("table")String tablePrefix, @Bind("email") String email);
 
-	@SqlUpdate("insert into aqv_users (oauth_provider, oauth_id, email)"
+	@SqlUpdate("insert into <table>_users (oauth_provider, oauth_id, email)"
 			+ " select :provider, :id, :email from (select 1) b" + " where not exists "
-			+ " (select 1 from aqv_users where oauth_provider=:provider AND oauth_id=:id)")
-	void addUser(@Bind("provider") String oauthProvider, @Bind("id") String oauthId, @Bind("email") String email);
+			+ " (select 1 from <table>_users where oauth_provider=:provider AND oauth_id=:id)")
+	void addUser(@Define("table")String tablePrefix, @Bind("provider") String oauthProvider, @Bind("id") String oauthId, @Bind("email") String email);
 
-	@SqlUpdate("update aqv_users set email=:email" //
+	@SqlUpdate("update <table>_users set email=:email" //
 			+ " where oauth_provider=:provider AND oauth_id=:id")
-	void updateEmail(@Bind("provider") String oauthProvider, @Bind("id") String oauthId, @Bind("email") String email);
+	void updateEmail(@Define("table")String tablePrefix, @Bind("provider") String oauthProvider, @Bind("id") String oauthId, @Bind("email") String email);
 
-	@SqlUpdate("update aqv_votes" //
+	@SqlUpdate("update <table>_votes" //
 			+ " set bad=:bad, poor=:poor, good=:good" + " where vid=:vid and uid=:uid")
-	void setVote(@Bind("uid") Long uid, @Bind("vid") Long vid, @Bind("bad") Integer bad, @Bind("poor") Integer poor,
+	void setVote(@Define("table")String tablePrefix, @Bind("uid") Long uid, @Bind("vid") Long vid, @Bind("bad") Integer bad, @Bind("poor") Integer poor,
 			@Bind("good") Integer good);
 
-	@SqlQuery("select vid from aqv_votes where uid=:uid order by file")
-	List<Long> audioDataVidsFor(@Bind("uid") Long uid);
+	@SqlQuery("select vid from <table>_votes where uid=:uid order by file")
+	List<Long> audioDataVidsFor(@Define("table")String tablePrefix, @Bind("uid") Long uid);
 
-	@SqlQuery("select aid from aqv_votes where uid=:uid")
-	List<Long> audioDataAidsFor(@Bind("uid") Long uid);
+	@SqlQuery("select aid from <table>_votes where uid=:uid")
+	List<Long> audioDataAidsFor(@Define("table")String tablePrefix, @Bind("uid") Long uid);
 
 	@SqlQuery("select aid," //
 			+ " sum(bad) bad, sum(poor) poor, sum(good) good," //
 			+ " avg(good) - (avg(bad)*2+avg(poor)) ranking," //
 			+ " count(*) votes" //
-			+ " from aqv_votes" //
+			+ " from <table>_votes" //
 			+ " where bad>0 OR poor>0 or good>0" //
 			+ " group by aid order by ranking desc, aid")
 	@RegisterBeanMapper(VoteResult.class)
-	List<VoteResult> audioVoteResults();
+	List<VoteResult> audioVoteResults(@Define("table")String tablePrefix);
 
-	@SqlUpdate("delete from aqv_votes where vid=:vid AND uid=:uid")
-	void removeVoteEntry(@Bind("uid") Long uid, @Bind("vid") Long vid);
+	@SqlUpdate("delete from <table>_votes where vid=:vid AND uid=:uid")
+	void removeVoteEntry(@Define("table")String tablePrefix, @Bind("uid") Long uid, @Bind("vid") Long vid);
 
-	@SqlQuery("select count(*) from aqv_sessions where uid=:uid")
-	int sessionCount(@Bind("uid") Long uid);
+	@SqlQuery("select count(*) from <table>_sessions where uid=:uid")
+	int sessionCount(@Define("table")String tablePrefix, @Bind("uid") Long uid);
 
-	@SqlUpdate("delete from aqv_sessions where uid=:uid order by last_seen limit :limit")
-	void deleteOldestSessions(@Bind("uid") Long uid, @Bind("limit") int limit);
+	@SqlUpdate("delete from <table>_sessions where uid=:uid order by last_seen limit :limit")
+	void deleteOldestSessions(@Define("table")String tablePrefix, @Bind("uid") Long uid, @Bind("limit") int limit);
 
-	@SqlUpdate("update aqv_users set last_login=NOW(), modified=modified where uid=:uid")
-	void updateLastLogin(@Bind("uid") Long uid);
+	@SqlUpdate("update <table>_users set last_login=NOW(), modified=modified where uid=:uid")
+	void updateLastLogin(@Define("table")String tablePrefix, @Bind("uid") Long uid);
 
 	@SqlQuery("select aid," //
 			+ " avg(good) - (avg(bad)*2+avg(poor)) ranking," + " count(*) votes" //
-			+ " from aqv_votes" //
+			+ " from <table>_votes" //
 			+ " where" //
 			+ " (bad>0 OR poor>0 or good>0)" //
 			+ " group by file" //
 			+ " having votes >= :minVotes" + " order by rand()")
 	@KeyColumn("aid")
 	@ValueColumn("ranking")
-	Map<Long, Float> voteRankingsByAid(@Bind("minVotes") int minVotes);
+	Map<Long, Float> voteRankingsByAid(@Define("table")String tablePrefix, @Bind("minVotes") int minVotes);
 
 	@SqlQuery("select file," //
 			+ " avg(good) - (avg(bad)*2+avg(poor)) ranking," + " count(*) votes" //
-			+ " from aqv_votes" //
+			+ " from <table>_votes" //
 			+ " where" //
 			+ " (bad>0 OR poor>0 or good>0)" //
 			+ " group by file" //
 			+ " having votes >= :minVotes" + " AND" + " ranking >= :minRanking")
 	@KeyColumn("file")
 	@ValueColumn("ranking")
-	Map<String, Float> voteRankingsByFile(@Bind("minVotes") int minVotes, @Bind("minRanking") double minRanking);
+	Map<String, Float> voteRankingsByFile(@Define("table")String tablePrefix, @Bind("minVotes") int minVotes, @Bind("minRanking") double minRanking);
 
-	@SqlQuery("select count(*) from aqv_votes where uid=:uid AND good=0 AND poor=0 AND bad=0")
-	int userPendingVoteCount(@Bind("uid") Long uid);
+	@SqlQuery("select count(*) from <table>_votes where uid=:uid AND good=0 AND poor=0 AND bad=0")
+	int userPendingVoteCount(@Define("table")String tablePrefix, @Bind("uid") Long uid);
 
-	@SqlQuery("select count(*) from aqv_votes where uid=:uid AND (good=1 OR poor=1 OR bad=1)")
-	int userCompletedVoteCount(@Bind("uid") Long uid);
+	@SqlQuery("select count(*) from <table>_votes where uid=:uid AND (good=1 OR poor=1 OR bad=1)")
+	int userCompletedVoteCount(@Define("table")String tablePrefix, @Bind("uid") Long uid);
 
-	@SqlQuery("select uid, count(*) voted, max(modified) m from aqv_votes" //
+	@SqlQuery("select uid, count(*) voted, max(modified) m from <table>_votes" //
 			+ " where (good!=0 OR poor!=0 OR bad!=0)" //
 			+ " group by uid" //
 			+ " order by voted desc, m desc" //
 			+ " limit :limit")
-	List<Long> topUsersByVoteCounts(@Bind("limit") int limit);
+	List<Long> topUsersByVoteCounts(@Define("table")String tablePrefix, @Bind("limit") int limit);
 
-	@SqlQuery("select count(*) from aqv_audio")
+	@SqlQuery("select count(*) from <table>_audio")
 	long audioTrackCount();
 
-	@SqlUpdate("delete from aqv_users where uid=:uid and :uid!=0;"
-			+ " delete from aqv_votes where uid=:uid and :uid!=0;"
-			+ " delete from aqv_audio where uid=:uid and :uid!=0;"
-			+ " delete from aqv_sessions where uid=:uid and :uid!=0;")
-	void deleteUserById(@Bind("uid") Long uid);
+	@SqlUpdate("delete from <table>_users where uid=:uid and :uid!=0;"
+			+ " delete from <table>_votes where uid=:uid and :uid!=0;"
+			+ " delete from <table>_audio where uid=:uid and :uid!=0;"
+			+ " delete from <table>_sessions where uid=:uid and :uid!=0;")
+	void deleteUserById(@Define("table")String tablePrefix, @Bind("uid") Long uid);
 
-	@SqlUpdate("update aqv_sessions set last_seen=NOW() where uid=:uid AND session=:session")
-	void updateLastSeen(@Bind("uid") Long uid, @Bind("session") String sessionId);
+	@SqlUpdate("update <table>_sessions set last_seen=NOW() where uid=:uid AND session=:session")
+	void updateLastSeen(@Define("table")String tablePrefix, @Bind("uid") Long uid, @Bind("session") String sessionId);
 
-	@SqlUpdate("delete from aqv_sessions where last_seen < NOW() - INTERVAL 1 WEEK")
-	void deleteOldSessions();
+	@SqlUpdate("delete from <table>_sessions where last_seen < NOW() - INTERVAL 1 WEEK")
+	void deleteOldSessions(@Define("table")String tablePrefix);
 
 	default List<String> availableTexts() {
 		return userTexts(0l);
 	}
 
-	@SqlQuery("select count(*)>0 from aqv_audio where uid=0 AND txt=:text")
+	@SqlQuery("select count(*)>0 from <table>_audio where uid=0 AND txt=:text")
 	boolean isValidText(@Bind("text") String text);
 
-	@SqlQuery("select file from aqv_audio where uid=0 AND txt=:text")
+	@SqlQuery("select file from <table>_audio where uid=0 AND txt=:text")
 	String fileForText(@Bind("text") String text);
 
-	@SqlQuery("select aid from aqv_audio where uid=0 AND txt=:text")
+	@SqlQuery("select aid from <table>_audio where uid=0 AND txt=:text")
 	Long aidForText(@Bind("text") String text);
 
-	@SqlQuery("select distinct txt from aqv_audio where uid=:uid")
+	@SqlQuery("select distinct txt from <table>_audio where uid=:uid")
 	List<String> userTexts(@Bind("uid") Long uid);
 
-	@SqlQuery("select count(*)>0 from aqv_audio where uid=:uid AND file=:file and data is not null")
+	@SqlQuery("select count(*)>0 from <table>_audio where uid=:uid AND file=:file and data is not null")
 	boolean audioBytesInfoExistsFor(@Bind("uid") long uid, @Bind("file") String file);
 
-	@SqlQuery("select count(*)>0 from aqv_audio where aid=:aid and data is not null")
+	@SqlQuery("select count(*)>0 from <table>_audio where aid=:aid and data is not null")
 	boolean audioBytesInfoHasData(@Bind("aid") long aid);
 
-	@SqlUpdate("update aqv_votes set aid=:aid where file=:file")
+	@SqlUpdate("update <table>_votes set aid=:aid where file=:file")
 	void setAudioIdForMatchingVotes(@Bind("aid") long aid, @Bind("file") String file);
 
-	@SqlQuery("select aid from aqv_audio where file=:file order by uid limit 1")
+	@SqlQuery("select aid from <table>_audio where file=:file order by uid limit 1")
 	Long getAidForFile(@Bind("file") String file);
 
-	@SqlQuery("select mime from aqv_audio where aid=:aid")
+	@SqlQuery("select mime from <table>_audio where aid=:aid")
 	String audioBytesMime(@Bind("aid") Long aid);
 }

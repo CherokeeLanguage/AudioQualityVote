@@ -1,10 +1,10 @@
 plugins {
 	id "java"
 	id "war"
-	id "org.gretty"
 	id "eclipse-wtp" 
 	id "org.wisepersist.gwt"
 	id "com.diffplug.eclipse.apt"
+	id "org.gretty"
 }
 
 compileJava.options.encoding = 'UTF-8'
@@ -23,6 +23,10 @@ tasks.withType(org.wisepersist.gradle.plugins.gwt.GwtCompile) {
 tasks.withType(org.wisepersist.gradle.plugins.gwt.GwtSuperDev) {
 	args "-style", "PRETTY", "-strict"
 	jvmArgs "-Dgwt.watchFileChanges=false"
+}
+
+gretty {
+	servletContainer = 'tomcat9'
 }
 
 gwt {
