@@ -251,7 +251,7 @@ public interface AudioQualityVoteDao extends SqlObject {
 	default List<Long> pendingVids(long uid) {
 		Map<Long, Float> rankings = voteRankingsByAid(MIN_VOTES_FILTER);
 		List<Long> undecided = undecidedVids(uid);
-		if (undecided.size()<NEW_ENTRIES_COUNT) {
+		if (undecided.size()<NEW_ENTRIES_COUNT*2) {
 			scanForNewEntries(uid);
 			undecided = undecidedVids(uid);
 		}
