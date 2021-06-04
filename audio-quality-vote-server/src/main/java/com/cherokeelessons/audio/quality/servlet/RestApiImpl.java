@@ -81,31 +81,32 @@ public class RestApiImpl implements RestApi {
 			if (!LOAD_CHECK.tryLock()) {
 				return;
 			}
+			System.out.println("Audio Load Check - START");
 			final String audioDataPath = AudioQualityVoteFiles.getFolder().getAbsolutePath();
-			try {
-				for (AudioData d : AudioQualityVoteFiles.getAudioData()) {
-					String file = d.getFile();
-					File dataFile = new File(file);
-					file = StringUtils.substringAfter(file, audioDataPath);
-					d.setFile(file);
-					if (dao().getAidForFile(file) != null) {
-						return;
-					}
-					AudioBytesInfo info = new AudioBytesInfo();
-					info.setFile(file);
-					info.setMime("audio/mpeg");
-					info.setTxt(Normalizer.normalize(d.getTxt().trim(), Form.NFC));
-					info.setUid(0);
-					long aid = dao().insertAudioBytesInfo(info);
-					if (aid<1) {
-						return;
-					}
-					dao().setAudioBytesData(aid, dataFile);
+			List<AudioData> audioData = AudioQualityVoteFiles.getAudioData();
+			System.out.printf(" - Found %,d audio files with matching text.\n", audioData.size());
+			for (AudioData d : audioData) {
+				String file = d.getFile();
+				File dataFile = new File(file);
+				file = StringUtils.substringAfter(file, audioDataPath);
+				d.setFile(file);
+				if (dao().getAidForFile(file) != null) {
+					continue;
 				}
-			} catch (Exception e) {
-				e.printStackTrace();
+				AudioBytesInfo info = new AudioBytesInfo();
+				info.setFile(file);
+				info.setMime("audio/mpeg");
+				info.setTxt(Normalizer.normalize(d.getTxt().trim(), Form.NFC));
+				info.setUid(0);
+				long aid = dao().insertAudioBytesInfo(info);
+				if (aid < 1) {
+					continue;
+				}
+				dao().setAudioBytesData(aid, dataFile);
 			}
 			System.out.println("Audio Load Check - DONE");
+		} catch (Exception e) {
+			e.printStackTrace();
 		} finally {
 			LOAD_CHECK.unlock();
 		}
@@ -251,7 +252,7 @@ public class RestApiImpl implements RestApi {
 		for (Long vid : vids) {
 			list.getList().add(dao().audioDataInfoByVid(vid));
 		}
-		list.getList().forEach(item->{
+		list.getList().forEach(item -> {
 			item.setTxt(Normalizer.normalize(item.getTxt(), Form.NFC));
 		});
 		return list;

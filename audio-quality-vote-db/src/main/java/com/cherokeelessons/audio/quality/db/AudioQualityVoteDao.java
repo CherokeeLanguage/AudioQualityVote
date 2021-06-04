@@ -9,6 +9,7 @@ import java.io.OutputStream;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -42,7 +43,7 @@ import com.zaxxer.hikari.HikariDataSource;
 
 public interface AudioQualityVoteDao extends SqlObject {
 
-	public static final int NEW_ENTRIES_COUNT = 10;
+	public static final int NEW_ENTRIES_COUNT = 5;
 	int MIN_VOTES_FILTER = 3;
 
 	static AudioQualityVoteDao onDemand() {
@@ -250,7 +251,7 @@ public interface AudioQualityVoteDao extends SqlObject {
 	default List<Long> pendingVids(long uid) {
 		Map<Long, Float> rankings = voteRankingsByAid(MIN_VOTES_FILTER);
 		List<Long> undecided = undecidedVids(uid);
-		if (undecided.size() < NEW_ENTRIES_COUNT * 2) {
+		if (undecided.size()<NEW_ENTRIES_COUNT) {
 			scanForNewEntries(uid);
 			undecided = undecidedVids(uid);
 		}
@@ -273,6 +274,7 @@ public interface AudioQualityVoteDao extends SqlObject {
 		Set<Long> already = new HashSet<>(audioDataAidsFor(uid));
 		Map<Long, Float> rankings = voteRankingsByAid(MIN_VOTES_FILTER);
 		List<AudioBytesInfo> entries = audioBytesInfo();
+		Collections.shuffle(entries);
 		entries.forEach(f -> {
 			if (maxNewFiles.get() <= 0) {
 				return;
@@ -281,7 +283,8 @@ public interface AudioQualityVoteDao extends SqlObject {
 				return;
 			}
 			Float ranking = rankings.get(f.getAid());
-			if ((ranking == null ? 0 : ranking) < -2) {
+			ranking = (ranking == null ? 0 : ranking);
+			if (ranking < -2 || ranking > 1) {
 				return;
 			}
 			addPendingEntry(uid, f.getAid(), f.getFile(), f.getTxt());

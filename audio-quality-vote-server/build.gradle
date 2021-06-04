@@ -43,6 +43,9 @@ dependencies {
 	//jdk 11 requirement
 	implementation 'org.glassfish.jaxb:jaxb-runtime:2.3.1'
 	implementation 'javax.xml.bind:jaxb-api:2.3.1'
+	
+	//required by one of the libs
+	implementation 'org.slf4j:slf4j-jdk14:1.7.30'
 }
 
 // Required for correct setup of APT in Eclipse

@@ -7,6 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.stream.Stream;
@@ -47,6 +48,7 @@ public class AudioQualityVoteFiles {
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
+		Collections.sort(files, (a,b)->a.getFile().compareToIgnoreCase(b.getFile()));
 		return files;
 	}
 	
