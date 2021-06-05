@@ -6,7 +6,12 @@ public abstract class AppPathConfig {
 	public static String TABLE_PREFIX;
 	
 	public static void findConfigFile(String folder, String context) {
-		TABLE_PREFIX = context;
+		
+		TABLE_PREFIX = context.replaceAll("(?i)[^a-z0-9_]", "_");
+		if (!TABLE_PREFIX.matches("(?i)[a-z_].*")){
+			TABLE_PREFIX = "_" + TABLE_PREFIX;
+		}
+
 		File parentFolder = new File(folder);
 		File[] locations = {
 				new File(parentFolder, "../" + context + ".properties"),
@@ -34,5 +39,5 @@ public abstract class AppPathConfig {
 		}
 	}
 	
-	public static File PROPERTIES_FILE=new File("AudioQualityVote-db.properties").getAbsoluteFile();
+	public static File PROPERTIES_FILE=new File("AudioQualityVote_db.properties").getAbsoluteFile();
 }
