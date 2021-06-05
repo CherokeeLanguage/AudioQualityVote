@@ -396,6 +396,16 @@ public interface AudioQualityVoteDao extends SqlObject {
 			+ " where bad>0 OR poor>0 or good>0" //
 			+ " group by aid order by ranking desc, aid")
 	@RegisterBeanMapper(VoteResult.class)
+	List<VoteResult> audioVoteResults_old(@Define("table")String tablePrefix);
+	
+	@SqlQuery("select aid," //
+			+ " sum(bad) bad, 0 poor, sum(good) good," //
+			+ " avg(good) - avg(bad) ranking," //
+			+ " count(*) votes" //
+			+ " from <table>_votes" //
+			+ " where bad>0 OR poor>0 or good>0" //
+			+ " group by aid order by ranking desc, aid")
+	@RegisterBeanMapper(VoteResult.class)
 	List<VoteResult> audioVoteResults(@Define("table")String tablePrefix);
 
 	@SqlUpdate("delete from <table>_votes where vid=:vid AND uid=:uid")
