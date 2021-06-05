@@ -91,7 +91,7 @@ public class RestApiImpl implements RestApi {
 				File dataFile = new File(file);
 				file = StringUtils.substringAfter(file, audioDataPath);
 				d.setFile(file);
-				if (dao().getAidForFile(file) != null) {
+				if (dao().getAidForFile(AppPathConfig.TABLE_PREFIX, file) != null) {
 					continue;
 				}
 				AudioBytesInfo info = new AudioBytesInfo();
@@ -172,13 +172,13 @@ public class RestApiImpl implements RestApi {
 			System.err.println("No entry in db for aid " + aid);
 			return Response.status(Status.NOT_FOUND).build();
 		}
-		if (!dao().audioBytesInfoHasData(aid)) {
+		if (!dao().audioBytesInfoHasData(AppPathConfig.TABLE_PREFIX, aid)) {
 			System.err.println("Entry in db for aid " + aid + " does not have audio data attached.");
 			return Response.status(Status.NOT_FOUND).build();
 		}
 
 		try {
-			String audioBytesMime = StringUtils.defaultString(dao().audioBytesMime(aid), "audio/mpeg");
+			String audioBytesMime = StringUtils.defaultString(dao().audioBytesMime(AppPathConfig.TABLE_PREFIX, aid), "audio/mpeg");
 			response.setHeader("Cache-Control", "public,max-age=" + (60 * 60 * 24));
 			response.setContentType(audioBytesMime);
 			dao().audioBytesStream(AppPathConfig.TABLE_PREFIX, aid, response.getOutputStream());
@@ -362,8 +362,8 @@ public class RestApiImpl implements RestApi {
 			return null;
 		}
 		TextForRecording tfr = new TextForRecording();
-		List<String> texts = dao().availableTexts();
-		texts.removeAll(dao().userTexts(uid));
+		List<String> texts = dao().availableTexts(AppPathConfig.TABLE_PREFIX);
+		texts.removeAll(dao().userTexts(AppPathConfig.TABLE_PREFIX, uid));
 		if (texts.size() > count) {
 			texts = texts.subList(0, count);
 		}
@@ -392,7 +392,7 @@ public class RestApiImpl implements RestApi {
 			sendError(Status.UNAUTHORIZED);
 			return null;
 		}
-		if (!dao().isValidText(text)) {
+		if (!dao().isValidText(AppPathConfig.TABLE_PREFIX, text)) {
 			sendError(Status.BAD_REQUEST, "Unknown text: " + text);
 			return null;
 		}
@@ -404,7 +404,7 @@ public class RestApiImpl implements RestApi {
 			return null;
 		}
 		long aid = -1;
-		String file = dao().fileForText(text);
+		String file = dao().fileForText(AppPathConfig.TABLE_PREFIX, text);
 		AudioBytesInfo info = new AudioBytesInfo();
 		info.setFile(file);
 		info.setMime(request.getContentType());

@@ -48,30 +48,35 @@ public interface AudioQualityVoteDao extends SqlObject {
 	int MIN_VOTES_FILTER = 3;
 
 	static AudioQualityVoteDao onDemand(String tablePrefix) {
-		State.loadPropertiesFile();
-
-		final HikariConfig config = new HikariConfig();
-		config.setIdleTimeout(5 * 60 * 1000l);
-		config.setMaximumPoolSize(Math.max(4, Math.max(Runtime.getRuntime().availableProcessors() - 1, 1)));
-		config.setMaxLifetime(15 * 60 * 1000l); // min allowed
-		config.setMinimumIdle(0);
-		config.setInitializationFailTimeout(0);
-		config.setConnectionTimeout(0);
-		config.setDriverClassName("org.mariadb.jdbc.Driver");
-		config.setJdbcUrl(State.jdbcUrl);
-		config.setUsername(State.user);
-		config.setPassword(State.password);
-
-		State.ds = new HikariDataSource(config);
-
-		Jdbi jdbi = Jdbi.create(State.ds);
-		final SerializableTransactionRunner transactionHandler = new SerializableTransactionRunner();
-		jdbi.setTransactionHandler(transactionHandler); // auto retry transactions that deadlock
-		jdbi.installPlugin(new SqlObjectPlugin());
-		AudioQualityVoteDao onDemand = jdbi.onDemand(AudioQualityVoteDao.class);
-		onDemand.init(tablePrefix);
-		State.dao = onDemand;
-		return onDemand;
+		synchronized (AudioQualityVoteDao.State.class) {
+			if (State.dao!=null) {
+				return State.dao;
+			}
+			State.loadPropertiesFile();
+			
+			final HikariConfig config = new HikariConfig();
+			config.setIdleTimeout(5 * 60 * 1000l);
+			config.setMaximumPoolSize(Math.max(4, Math.max(Runtime.getRuntime().availableProcessors() - 1, 1)));
+			config.setMaxLifetime(15 * 60 * 1000l); // min allowed
+			config.setMinimumIdle(0);
+			config.setInitializationFailTimeout(0);
+			config.setConnectionTimeout(0);
+			config.setDriverClassName("org.mariadb.jdbc.Driver");
+			config.setJdbcUrl(State.jdbcUrl);
+			config.setUsername(State.user);
+			config.setPassword(State.password);
+			
+			State.ds = new HikariDataSource(config);
+			
+			Jdbi jdbi = Jdbi.create(State.ds);
+			final SerializableTransactionRunner transactionHandler = new SerializableTransactionRunner();
+			jdbi.setTransactionHandler(transactionHandler); // auto retry transactions that deadlock
+			jdbi.installPlugin(new SqlObjectPlugin());
+			AudioQualityVoteDao onDemand = jdbi.onDemand(AudioQualityVoteDao.class);
+			onDemand.init(tablePrefix);
+			State.dao = onDemand;
+			return onDemand;
+		}
 	}
 
 	static void close() {
@@ -181,7 +186,7 @@ public interface AudioQualityVoteDao extends SqlObject {
 	List<AudioBytesInfo> audioBytesInfoFor(@Define("table")String tablePrefix, @Bind("uid") long uid);
 
 	@SqlQuery("select aid, uid, file, txt, mime" //
-			+ " from <table>_audio order by aid")
+			+ " from <table>_audio")
 	@RegisterBeanMapper(AudioBytesInfo.class)
 	List<AudioBytesInfo> audioBytesInfo(@Define("table")String tablePrefix);
 
@@ -204,7 +209,7 @@ public interface AudioQualityVoteDao extends SqlObject {
 	@SqlUpdate("update <table>_audio set data=:data where aid=:aid")
 	void setAudioBytesData(@Define("table")String tablePrefix, @Bind("aid") long aid, @Bind("data") byte[] data);
 
-	default void setAudioBytesData(@Define("table")String tablePrefix, long aid, InputStream data) {
+	default void setAudioBytesData(String tablePrefix, long aid, InputStream data) {
 		useHandle(h -> {
 			h.createUpdate("update <table>_audio set data=:data where aid=:aid") //
 			.define("table", tablePrefix) //
@@ -243,7 +248,8 @@ public interface AudioQualityVoteDao extends SqlObject {
 	@RegisterBeanMapper(AudioBytesInfo.class)
 	List<AudioBytesInfo> audioVoteEntriesForMigration(@Define("table")String tablePrefix);
 
-	@SqlQuery("select vid from <table>_votes where " + " uid=:uid AND good=0 AND poor=0 AND bad=0")
+	@SqlQuery("select vid from <table>_votes where " //
+			+ " uid=:uid AND good=0 AND poor=0 AND bad=0")
 	List<Long> undecidedVids(@Define("table")String tablePrefix, @Bind("uid") long uid);
 
 	@Transaction
@@ -258,9 +264,9 @@ public interface AudioQualityVoteDao extends SqlObject {
 		while (iter.hasNext()) {
 			Long vid = iter.next();
 			AudioData audioData = audioDataInfoByVid(tablePrefix, vid);
-			Float ranking = rankings.get(audioData.getAid());
-			ranking = (ranking == null ? 0 : ranking);
-			if (!audioBytesInfoHasData(audioData.getAid()) || ranking < -2 || ranking > 1) {
+			Long aid = audioData.getAid();
+			float ranking = rankings.containsKey(aid) ? rankings.get(aid) : 0;
+			if (!audioBytesInfoHasData(tablePrefix, aid) || ranking < -1 || ranking > 1) {
 				removeVoteEntry(tablePrefix, uid, vid);
 				iter.remove();
 			}
@@ -274,21 +280,20 @@ public interface AudioQualityVoteDao extends SqlObject {
 		Map<Long, Float> rankings = voteRankingsByAid(tablePrefix, MIN_VOTES_FILTER);
 		List<AudioBytesInfo> entries = audioBytesInfo(tablePrefix);
 		Collections.shuffle(entries);
-		entries.forEach(f -> {
-			if (maxNewFiles.get() <= 0) {
-				return;
+		for (AudioBytesInfo f: entries) {
+			final long aid = f.getAid();
+			if (already.contains(aid)) {
+				continue;
 			}
-			if (already.contains(f.getAid())) {
-				return;
+			float ranking = rankings.containsKey(aid) ? rankings.get(aid) : 0;
+			if (ranking < -1 || ranking > 1) {
+				continue;
 			}
-			Float ranking = rankings.get(f.getAid());
-			ranking = (ranking == null ? 0 : ranking);
-			if (ranking < -2 || ranking > 1) {
-				return;
+			addPendingEntry(tablePrefix, uid, aid, f.getFile(), f.getTxt());
+			if (maxNewFiles.decrementAndGet() <= 0) {
+				break;
 			}
-			addPendingEntry(tablePrefix, uid, f.getAid(), f.getFile(), f.getTxt());
-			maxNewFiles.decrementAndGet();
-		});
+		}
 	}
 
 	@Transaction
@@ -406,6 +411,18 @@ public interface AudioQualityVoteDao extends SqlObject {
 	void updateLastLogin(@Define("table")String tablePrefix, @Bind("uid") Long uid);
 
 	@SqlQuery("select aid," //
+			+ " avg(good) - avg(bad) ranking," //
+			+ " count(*) votes" //
+			+ " from <table>_votes" //
+			+ " where" //
+			+ " (bad>0 or good>0)"
+			+ " group by aid" //
+			+ " having votes >= :minVotes")
+	@KeyColumn("aid")
+	@ValueColumn("ranking")
+	Map<Long, Float> voteRankingsByAid(@Define("table")String tablePrefix, @Bind("minVotes") int minVotes);
+	
+	@SqlQuery("select aid," //
 			+ " avg(good) - (avg(bad)*2+avg(poor)) ranking," + " count(*) votes" //
 			+ " from <table>_votes" //
 			+ " where" //
@@ -414,7 +431,7 @@ public interface AudioQualityVoteDao extends SqlObject {
 			+ " having votes >= :minVotes" + " order by rand()")
 	@KeyColumn("aid")
 	@ValueColumn("ranking")
-	Map<Long, Float> voteRankingsByAid(@Define("table")String tablePrefix, @Bind("minVotes") int minVotes);
+	Map<Long, Float> voteRankingsByAid_old(@Define("table")String tablePrefix, @Bind("minVotes") int minVotes);	
 
 	@SqlQuery("select file," //
 			+ " avg(good) - (avg(bad)*2+avg(poor)) ranking," + " count(*) votes" //
@@ -455,34 +472,34 @@ public interface AudioQualityVoteDao extends SqlObject {
 	@SqlUpdate("delete from <table>_sessions where last_seen < NOW() - INTERVAL 1 WEEK")
 	void deleteOldSessions(@Define("table")String tablePrefix);
 
-	default List<String> availableTexts() {
-		return userTexts(0l);
+	default List<String> availableTexts(String tablePrefix) {
+		return userTexts(tablePrefix, 0l);
 	}
 
 	@SqlQuery("select count(*)>0 from <table>_audio where uid=0 AND txt=:text")
-	boolean isValidText(@Bind("text") String text);
+	boolean isValidText(@Define("table")String tablePrefix, @Bind("text") String text);
 
 	@SqlQuery("select file from <table>_audio where uid=0 AND txt=:text")
-	String fileForText(@Bind("text") String text);
+	String fileForText(@Define("table")String tablePrefix, @Bind("text") String text);
 
 	@SqlQuery("select aid from <table>_audio where uid=0 AND txt=:text")
-	Long aidForText(@Bind("text") String text);
+	Long aidForText(@Define("table")String tablePrefix, @Bind("text") String text);
 
 	@SqlQuery("select distinct txt from <table>_audio where uid=:uid")
-	List<String> userTexts(@Bind("uid") Long uid);
+	List<String> userTexts(@Define("table")String tablePrefix, @Bind("uid") Long uid);
 
 	@SqlQuery("select count(*)>0 from <table>_audio where uid=:uid AND file=:file and data is not null")
-	boolean audioBytesInfoExistsFor(@Bind("uid") long uid, @Bind("file") String file);
+	boolean audioBytesInfoExistsFor(@Define("table")String tablePrefix, @Bind("uid") long uid, @Bind("file") String file);
 
 	@SqlQuery("select count(*)>0 from <table>_audio where aid=:aid and data is not null")
-	boolean audioBytesInfoHasData(@Bind("aid") long aid);
+	boolean audioBytesInfoHasData(@Define("table")String tablePrefix, @Bind("aid") long aid);
 
 	@SqlUpdate("update <table>_votes set aid=:aid where file=:file")
-	void setAudioIdForMatchingVotes(@Bind("aid") long aid, @Bind("file") String file);
+	void setAudioIdForMatchingVotes(@Define("table")String tablePrefix, @Bind("aid") long aid, @Bind("file") String file);
 
 	@SqlQuery("select aid from <table>_audio where file=:file order by uid limit 1")
-	Long getAidForFile(@Bind("file") String file);
+	Long getAidForFile(@Define("table")String tablePrefix, @Bind("file") String file);
 
 	@SqlQuery("select mime from <table>_audio where aid=:aid")
-	String audioBytesMime(@Bind("aid") Long aid);
+	String audioBytesMime(@Define("table")String tablePrefix, @Bind("aid") Long aid);
 }
