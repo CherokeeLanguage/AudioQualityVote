@@ -65,6 +65,14 @@ class-file major 55 cannot load on JDK 8. The target correction is in scope.
   with `ui/.apt_generated` holding the dagger-generated client sources
   (verified in the tree); the purged `.classpath` files designate `bin/`
   output folders.
+- War composition consumes the GWT compile output: the produced wars carry
+  the GWT-compiled webapp content (`gwt/*.cache.js`, `gwt/gwt.nocache.js`,
+  public assets — e.g. materialize CSS arrives via the compile output, not
+  `ui/src/main/webapp`); the war module's gretty block hard-codes the feed
+  path `extraResourceBase '../audio-quality-vote-ui/build/gwt/out'`
+  (`audio-quality-vote-war/build.gradle:28`), while the successor plugin's
+  compiler output defaults to `build/gwt` (docstr v2 configuration docs) with
+  no `/out` subdir.
 - `org.wisepersist.gwt` is terminal: Central's listing caps at 1.1.19
   (2022-07-21; maven-metadata same day) and the build pins the older 1.1.11;
   its `GwtBasePlugin` builds on the convention-access APIs
@@ -101,7 +109,13 @@ class-file major 55 cannot load on JDK 8. The target correction is in scope.
   annotation-processor/generated sources. The `gwt {}` configuration re-maps
   onto the successor's v2 DSL (`gwtVersion`, `modules`, `compiler`/
   `superDev` options, and the superDev source inputs; `extraSourceDirs`
-  carries the APT/generated-source re-point). If the functioning
+  carries the APT/generated-source re-point). The output side re-maps too:
+  the successor's compiler output defaults to `build/gwt` (no `/out`), so the
+  war composition's hard-coded feed
+  (`extraResourceBase '../audio-quality-vote-ui/build/gwt/out'`) is re-pointed
+  — or the successor's output location configured to a stable shared
+  location; the choice lands at implementation and is proven by the
+  war-content evidence in SC-2. If the functioning
   configuration requires a GWT version beyond 2.9.0, that rides the
   Out-of-scope's SC-2-requires carve-out; otherwise 2.9.0 stays.
 - Remove `jcenter()` (root `allprojects` + war module); resolution rides
@@ -167,11 +181,11 @@ class-file major 55 cannot load on JDK 8. The target correction is in scope.
 | ID | Criterion | Class | Verification instrument |
 |----|-----------|-------|-------------------------|
 | SC-1 | The wrapper pins the current latest stable Gradle release (9.8.2 at filing; a newer stable published before implementation supersedes it) | Structural | Read `gradle/wrapper/gradle-wrapper.properties` `distributionUrl`; the pinned version equals the head entry of the stable releases list at https://gradle.org/releases/ at check time |
-| SC-2 | `./gradlew build` completes successfully under the wrapper-pinned Gradle and produces the same war artifacts as today: `AudioQualityVote.war` from the server and war modules, the ui module's default-named war overlay | Behavioral | Run `./gradlew build` (via the wrapper); capture exit code 0 and `BUILD SUCCESSFUL`; confirm in the build output the three artifact surfaces: `AudioQualityVote.war` in the war module's and the server module's build output, and the default-named war artifact in the ui module's build output |
+| SC-2 | `./gradlew build` completes successfully under the wrapper-pinned Gradle and produces the same war artifacts as today — same names and same content: `AudioQualityVote.war` from the server and war modules, the ui module's default-named war overlay, each carrying the GWT-compiled webapp content | Behavioral | Run `./gradlew build` (via the wrapper); capture exit code 0 and `BUILD SUCCESSFUL`; confirm in the build output the three artifact surfaces (`AudioQualityVote.war` in the war and server modules' output, the default-named war in the ui module's output); confirm by war listing each contains the GWT-compiled entries (e.g. `gwt/`-prefixed `*.cache.js` bundles and public assets) — war composition, not names alone |
 | SC-3 | No dead repository remains in build scripts | Structural | Grep `*.gradle` for `jcenter` → 0 matches; dependency resolution from live repositories evidenced in the SC-2 build output |
 | SC-4 | Compiled bytecode runs on the project's JDK 8 floor (today's release-11 flags cannot load on JDK 8) | Structural | `javap -verbose` on a class compiled by the new build (e.g. server module) reports class-file major version 52 |
-| SC-5 | No Eclipse IDE integration remains in build files or the tree | Structural | Grep the six `build.gradle` + `settings.gradle` for `eclipse-wtp`, `com.diffplug.eclipse.apt`, `eclipseJdt`, `eclipseFactorypath`, and `eclipse {` config blocks → 0 matches; search the tree (excluding `.issues`) for `.project`, `.classpath`, `.factorypath`, `.settings`, `.apt_generated`, `.apt_generated_tests`, `bin/` → no entries present |
-| SC-6 | The dagger-annotation-processor → GWT-compiler source handoff keeps functioning after the purge | Behavioral | Run the GWT plugin's compile task via the wrapper (task name read from the adopted plugin's task catalog); exit 0 — the compile consumes the dagger-generated client sources through the re-pointed source input (successor-DSL `extraSourceDirs`) |
+| SC-5 | No Eclipse IDE integration remains in build files or the tree | Structural | Grep the six `build.gradle` + `settings.gradle` for `eclipse-wtp`, `com.diffplug.eclipse.apt`, `eclipseJdt`, `eclipseFactorypath`, and `eclipse {` config blocks → 0 matches; search the tree (excluding `.issues`) for `.project`, `.classpath`, `.factorypath`, `.settings`, `.apt_generated`, `.apt_generated_tests` (any depth) → no entries present; and no `bin/` directory exists as a direct child of root or any of the five module directories (the locations the purged `.classpath` entries designate) — `bin/` uses outside the modules (e.g. agent tooling trees) are out of the probe |
+| SC-6 | The dagger-annotation-processor → GWT-compiler source handoff keeps functioning after the purge, and the compile output lands where the war composition consumes it | Behavioral | Run the GWT plugin's compile task via the wrapper (task name read from the adopted plugin's task catalog); exit 0 — the compile consumes the dagger-generated client sources through the re-pointed source input (successor-DSL `extraSourceDirs`), and the compile's output directory is the location the war composition consumes (no stale producer-less `build/gwt/out` feed path remains) |
 
 ## Out of scope
 
@@ -209,8 +223,10 @@ class-file major 55 cannot load on JDK 8. The target correction is in scope.
 - Eclipse purge (developer-stated follow-up): the Eclipse IDE workflow
   (workspace project import, JDT/FactoryPath generation, wtp integration) is
   removed by intent; consumers outside the repo: none verified (no CI, no
-  published artifacts). The uncertain part is the ui module's GWT-compiler
-  source re-wiring after the diffplug/apt reads vanish (R5/SC-6 evidence).
+  published artifacts). The uncertain parts: the ui module's GWT-compiler
+  source re-wiring after the diffplug/apt reads vanish, and the
+  war-composition feed path (`extraResourceBase`) following the successor's
+  output-location change (R5/SC-6 + SC-2 evidence).
 - Risk: the plugin-era moves are the uncertain part — the gretty release bump,
   the `org.wisepersist.gwt` → `org.docstr.gwt` id succession with its v2-DSL
   re-map (and the GWT-version knock-on only if the functioning configuration
