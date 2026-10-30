@@ -74,8 +74,10 @@ carries a valid SemVer version.
   incompatible changes. The version subject is the deployed application as a whole;
   "backward-compatible" is judged against its user-visible behavior, its REST API, and
   stored data. Level selection follows SemVer's own definitions
-  (https://semver.org/), applied by the PR author; the first post-regime PR sets the
-  initial version (any valid SemVer value).
+  (https://semver.org/), applied by the PR author. Initialization: the PR that puts
+  this regime in effect sets the initial version (any valid SemVer value) in the same
+  diff instead of bumping; every PR that merges onto a trunk already carrying a valid
+  SemVer version bumps it exactly one increment.
 - R-3. A produced build artifact (`AudioQualityVote.war`) SHALL carry that build's
   version and UTC build date as host-page metadata (`aqv-version`, `aqv-build-date`)
   stamped at packaging time; the stamped values SHALL equal that build's `version`
@@ -91,8 +93,8 @@ carries a valid SemVer version.
 
 | ID | Criterion | Class | Verification instrument |
 |----|-----------|-------|-------------------------|
-| SC-1 | Root `build.gradle` carries a `version` property whose value is a valid SemVer string | Structural | Read the root `build.gradle` on trunk: the `version` property exists, its value matches the SemVer grammar (MAJOR.MINOR.PATCH), and it is not `unspecified` |
-| SC-2 | Every post-regime merged PR bumps the version exactly one increment, level SemVer-consistent | Structural (conduct requirement — continuation evidence) | Sample any merged post-regime PR and diff it against the trunk commit it landed on: the diff modifies the `version` value exactly once, from base B to B+1 increment (patch+1; minor+1 with patch reset; major+1 with minor+patch reset), and the level is consistent with the PR's content per SemVer definitions. Verified across post-regime PRs; repeatable per-PR because SOP.md carries the rule |
+| SC-1 | Root `build.gradle` declares the application version exactly once, as a valid SemVer value that every project in the build resolves | Structural | Read the root `build.gradle` on trunk: exactly one `version` declaration exists, its value matches the SemVer grammar (MAJOR.MINOR.PATCH), and it is not `unspecified`; then, through the project wrapper, run the `properties` task for the root and each of the five subprojects (e.g. `./gradlew -q :properties :audio-quality-vote-db:properties :audio-quality-vote-server:properties :audio-quality-vote-shared:properties :audio-quality-vote-ui:properties :audio-quality-vote-war:properties`) — every reported `version:` equals the declared value |
+| SC-2 | Every merged PR that lands on a trunk already carrying a valid SemVer version bumps the version exactly one increment with a SemVer-consistent level; the regime's initialization PR sets the initial value instead and is checked by SC-1's post-merge state | Structural (conduct requirement — continuation evidence) | Sample any merged PR landing on a SemVer-carrying trunk and diff it against the trunk commit it landed on: the base `version` value B on that trunk commit is a valid SemVer string, the diff modifies the `version` value exactly once, from B to B+1 increment (patch+1; minor+1 with patch reset; major+1 with minor+patch reset), and the level is consistent with the PR's content per SemVer definitions. Verified across such post-regime PRs; repeatable per-PR because SOP.md carries the rule |
 | SC-3 | A freshly produced war self-describes with its build's version and UTC build date | Behavioral | Wrapper build `./gradlew :audio-quality-vote-war:clean build` (project-root wrapper per SOP): extract the war's `index.html` — `aqv-version` equals the build's `version` value and `aqv-build-date` equals the build's UTC date; then bump `version` and rebuild — the second war carries the new value (values are build-derived, never hardcoded) |
 | SC-4 | The Login page displays the deployed build's version and build date | Behavioral | SOP local stack (MariaDB container + `./gradlew :audio-quality-vote-war:appStart`): browser automation loads `http://localhost:8080/AudioQualityVote/` and observes the rendered login view containing the built artifact's `aqv-version` and `aqv-build-date` values |
 | SC-5 | The About page displays the deployed build's version and build date | Behavioral | Same stack; the About view is login-gated by design (`api.loggedIn()`), so the instrument uses a browser session with a completed GitHub login, then observes the About view (first view shown post-login) displaying the artifact's `aqv-version` and `aqv-build-date` values |
@@ -119,7 +121,8 @@ carries a valid SemVer version.
 
 R-1/R-2 ← "start using semver for all PR's" + "this is an evergreen project. each PR
 needs to have a version bump": the bump must live somewhere incrementable (R-1's
-property is that place), and R-2 is the stated rule itself. R-3 ← necessary mechanism
+single declaration is that place — wired explicitly, since Gradle propagates no root
+version), and R-2 is the stated rule itself. R-3 ← necessary mechanism
 for R-4/R-5: a deployed page can only show what its artifact carries, and merged
 versions run ahead of deploys — artifact self-description via packaging-time stamping.
 R-4 ← "the login page ... show the version and build date". R-5 ← "the About page ...".
