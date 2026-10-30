@@ -17,6 +17,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.ws.rs.Path;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
@@ -126,23 +127,30 @@ public class RestApiImpl implements RestApi {
 	@Override
 	public UserInfo login(String code) {
 		if (code == null || code.isEmpty()) {
-			return null;
+			System.err.println("AQV login empty-code: empty or missing code parameter.");
+			throw new WebApplicationException("Login refused: missing authorization code",
+					Status.BAD_REQUEST);
 		}
 		Properties deployProperties = new Properties();
 		File file = AppPathConfig.PROPERTIES_FILE;
 		try (FileInputStream in = new FileInputStream(file.getAbsoluteFile())) {
 			deployProperties.load(in);
 		} catch (IOException e) {
-			System.err.println("Can't read " + file.getAbsolutePath() + ": " + e.getMessage());
-			return null;
+			System.err.println(
+					"AQV login properties-unreadable: " + brief(e.getMessage()));
+			throw new WebApplicationException(
+					"Login unavailable: server configuration unreadable",
+					Status.INTERNAL_SERVER_ERROR);
 		}
 		// Exchange-side credentials ride deployment properties; the compiled
 		// Consts.CLIENT_ID is the client bundle's view of the same public id.
 		String clientId = deployProperties.getProperty("github.client_id", Consts.CLIENT_ID);
 		String clientSecret = deployProperties.getProperty("github.client_secret");
 		if (clientSecret == null || clientSecret.isEmpty()) {
-			System.err.println("github.client_secret missing from deployment properties; login refused.");
-			return null;
+			System.err.println("AQV login config-error: github.client_secret missing from deployment properties.");
+			throw new WebApplicationException(
+					"Login unavailable: server configuration incomplete",
+					Status.INTERNAL_SERVER_ERROR);
 		}
 		final OAuth20Service service = new ServiceBuilder(clientId) //
 				.apiSecret(clientSecret) //
@@ -150,13 +158,20 @@ public class RestApiImpl implements RestApi {
 		OAuth2AccessToken accessToken;
 		try {
 			accessToken = service.getAccessToken(code);
-		} catch (IOException | InterruptedException | ExecutionException
-				| com.github.scribejava.core.exceptions.OAuthException e) {
-			System.err.println("GitHub code exchange failed: " + e.getMessage());
-			return null;
+		} catch (com.github.scribejava.core.exceptions.OAuthException e) {
+			// bad/stale authorization code, wrong credentials pair
+			System.err.println("AQV login exchange-failed: " + brief(e.getMessage()));
+			throw new WebApplicationException("Login refused: authorization code rejected",
+					Status.UNAUTHORIZED);
+		} catch (IOException | InterruptedException | ExecutionException e) {
+			System.err.println("AQV login github-unreachable: " + brief(e.getMessage()));
+			throw new WebApplicationException("Login unavailable: identity provider unreachable",
+					Status.BAD_GATEWAY);
 		}
 		if (accessToken == null || accessToken.getAccessToken() == null) {
-			return null;
+			System.err.println("AQV login exchange-empty: no access token returned.");
+			throw new WebApplicationException("Login unavailable: identity provider gave no access token",
+					Status.BAD_GATEWAY);
 		}
 		String oauthId;
 		String email;
@@ -187,12 +202,15 @@ public class RestApiImpl implements RestApi {
 				}
 			}
 		} catch (IOException e) {
-			System.err.println("GitHub identity fetch failed: " + e.getMessage());
-			return null;
+			System.err.println("AQV login identity-fetch-failed: " + brief(e.getMessage()));
+			throw new WebApplicationException("Login unavailable: could not verify identity with provider",
+					Status.BAD_GATEWAY);
 		}
 		if (email == null || email.isEmpty()) {
-			System.err.println("GitHub identity has no usable verified email; login refused.");
-			return null;
+			System.err.println("AQV login identity-incomplete: no usable verified email.");
+			throw new WebApplicationException(
+					"Login refused: your GitHub identity has no verified email to authorize with",
+					Status.FORBIDDEN);
 		}
 		// Email-based identity: an account is its verified email. A login
 		// whose email matches an existing row — regardless of which provider
@@ -203,6 +221,11 @@ public class RestApiImpl implements RestApi {
 			dao().addUser(AppPathConfig.TABLE_PREFIX, "GitHub", oauthId, email);
 			dao().updateEmail(AppPathConfig.TABLE_PREFIX, "GitHub", oauthId, email);
 			uid = dao().uidByEmail(AppPathConfig.TABLE_PREFIX, email);
+			if (uid == 0) {
+				System.err.println("AQV login row-resolution-failed: uid still 0 after insert; refusing session.");
+				throw new WebApplicationException("Login unavailable: account could not be established",
+						Status.INTERNAL_SERVER_ERROR);
+			}
 		}
 		dao().updateLastLogin(AppPathConfig.TABLE_PREFIX, uid);
 		dao().scanForNewEntries(AppPathConfig.TABLE_PREFIX, uid);
@@ -224,6 +247,19 @@ public class RestApiImpl implements RestApi {
 	 */
 	private static boolean isRecordableEmail(String email) {
 		return email != null && !email.isEmpty() && !email.contains("@users.noreply.github.com");
+	}
+
+	/**
+	 * Bounded-prefix helper for exception detail in diagnostics: third-party
+	 * message text is trimmed to a fixed ceiling so no unbounded response
+	 * echo reaches log output.
+	 */
+	private static String brief(String message) {
+		if (message == null) {
+			return "(no detail)";
+		}
+		String trimmed = message.trim();
+		return trimmed.length() <= 200 ? trimmed : trimmed.substring(0, 200) + "…";
 	}
 
 	@Override

@@ -14,7 +14,7 @@ if [ ! -r "$PROD_PROPERTIES" ]; then
 	exit 1
 fi
 
-gradle clean build war
+(cd "$SCRIPT_DIR/.." && ./gradlew :audio-quality-vote-war:clean :audio-quality-vote-war:build :audio-quality-vote-war:war)
 
 # deployment configuration: scp to temp name, remote rename into place
 # BEFORE the war rename so a fresh context init finds it
