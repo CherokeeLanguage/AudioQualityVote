@@ -1,0 +1,2 @@
+
+{"check":"SC-2 adaptive dark switch","light_probe":"tile-slit(256,256)=#64B5F6 letter(256,60)=#1976D2","dark_probe":"tile-slit(256,256)=#1565C0 letter(256,60)=#0D47A1","method":"playwright color_scheme=dark + magick pixel probe","verdict":"pass"}

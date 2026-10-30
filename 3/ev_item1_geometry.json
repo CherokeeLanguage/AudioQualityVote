@@ -1,0 +1,23 @@
+{
+ "file": "audio-quality-vote-ui/src/main/webapp/favicon.svg",
+ "geometry": {
+  "tile": "(6,6,500,500) rx104",
+  "ring_center": "(30,630) off-canvas",
+  "radii": "175..727 step 46 (range(175,761,46))",
+  "stroke": 22,
+  "letter": "U+13E3 Noto outline @430, centered (256,256)",
+  "border": 18,
+  "dilation": "fill-color stroke-width:10",
+  "layers": "tile > field > fill+dilation > white border",
+  "adaptive": "embedded @media prefers-color-scheme"
+ },
+ "geometry_note": "spec said 'radii 175-755 step 46'; approved round-7 code was range(175,761,46) = last arc r727; realized radii 175..727 (13 arcs, outer edge 738)",
+ "dark": {
+  "plate": "#1565C0",
+  "fill": "#0D47A1"
+ },
+ "light": {
+  "plate": "#64B5F6",
+  "fill": "#1976D2"
+ }
+}
