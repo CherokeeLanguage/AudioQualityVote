@@ -3,11 +3,13 @@
 set -e
 set -o pipefail
 
+cd "$(dirname "$(readlink -f "$0")")"
+
 trap "echo ERROR" ERR
 
 gradle clean build war
 
-scp build/libs/AudioQualityVote.war mconrad@vhost.cherokeedictionary.net:/opt/tomcat/webapps/CED-AudioQualityVote.tmp
+scp build/libs/AudioQualityVote.war mconrad@vhost.cherokeedictionary.net:/opt/tomcat/webapps/AudioQualityVote.tmp
 
-ssh mconrad@vhost.cherokeedictionary.net 'cd /opt/tomcat/webapps && mv -v CED-AudioQualityVote.tmp CED-AudioQualityVote.war'
+ssh mconrad@vhost.cherokeedictionary.net 'cd /opt/tomcat/webapps && mv -v AudioQualityVote.tmp AudioQualityVote.war'
 
