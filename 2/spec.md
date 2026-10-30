@@ -20,8 +20,8 @@ switch that identity provider to GitHub.
   line 14: `<inherits name="io.github.freddyboucher.gwt.oauth2.OAuth2"/>`.
 - `ui/Login.ui.xml` lines 27, 38: "Login with Google"; "A Google login is
   required to permit correct tabulation of votes."
-- `build.gradle` line 77: `compileOnly
-  "com.github.CherokeeLanguage.gwt-oauth2:gwt-oauth2:1.2-RC1"` (JitPack fork
+  - `build.gradle` line 69: `compileOnly
+    "com.github.CherokeeLanguage.gwt-oauth2:gwt-oauth2:1.2-RC1"` (JitPack fork
   of the upstream lib; the commented line above references the upstream 1.1).
 
 **Shared (`audio-quality-vote-shared`)**
@@ -36,7 +36,7 @@ switch that identity provider to GitHub.
   `dao().updateEmail(...)`), resolves the session uid by email
   (`AudioQualityVoteDao.uidByEmail`, `AudioQualityVoteDao.java:369`), issues a
   session id and trims to 5 retained sessions (lines 140-150).
-- `build.gradle` lines 37-38: `com.google.api-client:google-api-client[.jackson2]:1.31.5`
+- `build.gradle` lines 31-32: `com.google.api-client:google-api-client[.jackson2]:1.31.5`
   present for this verification path only (grep confirms no other module or
   class references it).
 
@@ -100,11 +100,11 @@ switch that identity provider to GitHub.
   for identity. Recorded caveat: ScribeJava's release line is dormant (no
   release since 2023-01) — accepted because the two GitHub OAuth endpoints are
   stable and each half is independently replaceable. The project's deployment
-  target is JDK 8 (developer-stated "this is a jdk8 project"; today's build
-  files carry `release = 11` flags inconsistent with that target — the target
-  correction is spec `AudioQualityVote#1`'s). Both picks are ≤ Java 8
-  bytecode, verified at filing from Maven Central/repo1 poms and GitHub repo
-  sources (2026-10-29/30) — the pair holds under the stated deployment floor.
+  target is JDK 8 (developer-stated "this is a jdk8 project"; the build files
+  carry `release = 8` per spec `AudioQualityVote#1`, merged). Both picks are
+  ≤ Java 8 bytecode, verified at filing from Maven Central/repo1 poms and
+  GitHub repo sources (2026-10-29/30) — the pair holds under the stated
+  deployment floor.
 - Ruled out, all verified live at filing: `com.google.oauth-client:google-oauth-client`
   1.39.0 (provider-neutral exchange exists; Google's own "maintenance mode"
   classification; heavier transitives), pac4j 6.x (JDK 17 bytecode — excluded
@@ -135,15 +135,17 @@ switch that identity provider to GitHub.
   scribejava-core/apis 8.3.3 pair plus `org.kohsuke:github-api:1.330` (GWT
   framework dependencies `com.google.gwt.*` are untouched).
 - Wording: login button and tabulation notice updated to GitHub wording.
-- Identity continuity (existing behavior, preserved and made deterministic):
-  session uid resolution by email stays; new GitHub logins insert with
-  provider `"GitHub"` — the users table can then hold both provider rows for
-  one email (the insert dedupes on provider+oauth_id); provider-`"Google"`
-  rows untouched. The email-match resolution
+- Identity continuity (amended 2026-10-30 by developer directive mid-cycle: email-based
+  identity): session uid resolution by email stays. Identity continuation is email-based and
+  single-row: a login whose verified email matches ANY existing row — regardless of which
+  provider created it — rides that row's uid with no row insertion; only a never-seen email
+  inserts a new provider-"GitHub" row (the insert dedupes on provider+oauth_id). Provider-"Google"
+  rows untouched as before: their identity fields (`oauth_provider`, `oauth_id`) and email remain
+  unchanged — session bookkeeping on the resolved row (e.g. `updateLastLogin`) is login behavior,
+  not re-attribution. The email-match resolution
   (`AudioQualityVoteDao.uidByEmail`, an unordered scalar select today) is
   made deterministic — explicit stable ordering preferring the earliest
-  matching row — so the migration cohort's continuation does not rest on
-  engine scan order.
+  matching row — so the resolution does not rest on engine scan order.
 
 ## Requirements
 
@@ -170,17 +172,15 @@ switch that identity provider to GitHub.
   client offers login again (this matches today's behavior: verification
   failure makes `login` return null and the login view stays).
 - R6. Vote attribution SHALL be unchanged for an authenticated session —
-  votes attach to the session's uid as today. Identity continuation stays
-  email-resolution based: a login whose verified email matches an existing
-  row resolves that row's uid — deterministically (the email-match resolution
-  orders explicitly and prefers the earliest matching row; it never relies on
-  engine scan order). Existing provider-"Google" rows SHALL NOT be
-  re-attributed: their identity fields (`oauth_provider`, `oauth_id`) and
-  email remain unchanged — session bookkeeping on the resolved row
-  (e.g. `updateLastLogin`) is login behavior, not re-attribution — and no
-  data migration touches them; a GitHub login may then legitimately leave
-  both provider rows sharing an email (the user-insert dedupes on
-  provider+oauth_id), which the deterministic resolution absorbs.
+  votes attach to the session's uid as today. Identity is email-based: a
+  login whose verified email matches an existing row — whatever provider
+  created it — resolves that row's uid deterministically (explicit stable
+  ordering, earliest row) and creates NO second user row; only a never-seen
+  email creates a new provider-"GitHub" row. Existing provider-"Google" rows
+  SHALL NOT be re-attributed: their identity fields (`oauth_provider`,
+  `oauth_id`) and email remain unchanged — session bookkeeping on the
+  resolved row (e.g. `updateLastLogin`) is login behavior, not
+  re-attribution — and no data migration touches them.
 - R7. The server's exchange and GitHub identity fetch SHALL ride the
   established maintained libraries named in Approach — ScribeJava 8.3.3
   (GitHubApi) and org.kohsuke:github-api 1.330 — and SHALL NOT hand-roll HTTP
@@ -196,7 +196,7 @@ switch that identity provider to GitHub.
 | SC-4 | No active Google OAuth surface remains in the code | Structural | Grep the repo: `accounts.google.com` in client login code, `GoogleIdToken`, `google-api-client` in build scripts, non-comment `gwt-oauth2` references, the OAuth2 GWT `inherits`, and the Google login wording (`Login with Google`, `A Google login`) → 0 matches; `Login.ui.xml`'s login button and tabulation-notice copy each reference GitHub and carry no Google reference (read of the two elements); GWT framework `com.google.gwt.*` references untouched |
 | SC-5 | The client secret is confined to server-side runtime configuration | Structural | `detect-secrets` scan (repo wrapper) reports no committed secret; `client_secret`/`GITHUB_CLIENT_SECRET` appears only in server-module code reading the properties-file config; shared/ui sources contain no secret value |
 | SC-6 | The server's exchange and identity ride the named libraries — no bespoke HTTP plumbing for those steps | Structural | Server `build.gradle` declares `com.github.scribejava:scribejava-core/-apis:8.3.3` and `org.kohsuke:github-api:1.330`; grep server sources for `github.com/login/oauth` and `api.github.com` literals → 0 matches (the endpoint URLs live inside the libraries; app code calls the library APIs) |
-| SC-7 | A GitHub login whose verified email matches a pre-existing provider-"Google" row resolves that pre-existing row's uid, deterministically — same uid on repeated logins, vote history attaching through it | Behavioral | Local dev database seeded with a provider-"Google" row whose email equals the test account's GitHub verified email; run the SC-1 web flow; assert the resolved uid is the seeded row's uid; repeat the login and assert the same uid; after both logins assert the seeded row's `oauth_provider` still reads "Google" and its `oauth_id`/email fields unchanged (re-attribution probe) |
+| SC-7 | A GitHub login whose verified email matches a pre-existing provider-"Google" row resolves that pre-existing row's uid, deterministically — same uid on repeated logins, vote history attaching through it, and no second user row created | Behavioral | Local dev database seeded with a provider-"Google" row whose email equals the test account's GitHub verified email; run the SC-1 web flow; assert the resolved uid is the seeded row's uid and that only the seeded row exists (no GitHub row added); repeat the login and assert the same uid; after both logins assert the seeded row's `oauth_provider` still reads "Google" and its `oauth_id`/email fields unchanged (re-attribution probe) |
 | SC-8 | A login whose test account's primary email is private records the account's primary verified email — not null and not a noreply alias — via the email-list route | Behavioral | Fixture GitHub account with its primary email set private (email-privacy toggle); confirm the authorize request carries the `user:email` scope (client code read); run the SC-1 web flow; read the recorded email and assert it equals the fixture account's primary verified address |
 
 ## Out of scope
