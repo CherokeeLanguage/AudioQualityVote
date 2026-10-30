@@ -88,6 +88,31 @@ switch that identity provider to GitHub.
 - The login request carries the returned `code` (not the access token): the
   server does exchange and identity fetch, as GitHub's documented flow
   requires.
+- Server tooling (developer-stated preference: "search for github compatible
+  libraries, no bespoke trash"): the exchange and identity halves ride
+  established libraries — `com.github.scribejava:scribejava-core:8.3.3` +
+  `com.github.scribejava:scribejava-apis:8.3.3` (the `GitHubApi` module wires
+  GitHub's token endpoint, authorize URL, and token extractor; framework-free,
+  MIT, Java-7-era bytecode) for the exchange, and `org.kohsuke:github-api:1.330`
+  (the actively maintained dedicated GitHub client — 1.330 released 2025-09,
+  MIT, Java-8 bytecode in the 1.x line; `GitHub.connectUsingOAuth(token)` →
+  `getMyself()` / `listEmails()` cover `/user` and private verified emails)
+  for identity. Recorded caveat: ScribeJava's release line is dormant (no
+  release since 2023-01) — accepted because the two GitHub OAuth endpoints are
+  stable and each half is independently replaceable. The project floor is
+  JDK 8 (developer-stated): both picks are ≤ Java 8 bytecode, verified at
+  filing from Maven Central/repo1 poms and GitHub repo sources
+  (2026-10-29/30).
+- Ruled out, all verified live at filing: `com.google.oauth-client:google-oauth-client`
+  1.39.0 (provider-neutral exchange exists; Google's own "maintenance mode"
+  classification; heavier transitives), pac4j 6.x (JDK 17 bytecode — excluded
+  by the jdk8 floor and by weight), Spring Security 7 (Java 17 + Spring
+  context), Apache Oltu (retired to the Attic 2018 — dead),
+  `com.nimbusds:oauth2-oidc-sdk` 11.38.2 (active but OIDC-flavored; its
+  behavior against GitHub's token endpoint was not verified), and
+  bytecode-downgrade machinery (JvmDowngrader / JavaDowngrader — the tools
+  exist and work, but no library this change consumes is jdk8-blocked, so no
+  jar-rewrite infrastructure is introduced).
 
 ## Approach
 
@@ -95,15 +120,18 @@ switch that identity provider to GitHub.
   `state` client-side, redirect the browser to the GitHub authorize URL; on
   return, verify `state` before submitting; send the `code` to
   `api.login(code)`.
-- Server: `RestApiImpl.login(code)` exchanges the code for an access token
-  (`client_id`, `client_secret` read from the deployment properties file),
-  resolves the identity from the GitHub API over that token (login/id, plus
-  the primary verified email when the account email is private), upserts the
-  user with provider `"GitHub"`, and reuses the existing session-issue logic
-  unchanged. The shared `RestApi` interface signature follows (idToken → code).
+- Server: `RestApiImpl.login(code)` exchanges the code for an access token via
+  ScribeJava (`GitHubApi` + `OAuth20Service`; `client_id`, `client_secret`
+  read from the deployment properties file), resolves the identity from
+  `org.kohsuke:github-api` (`GitHub.connectUsingOAuth(accessToken)` →
+  `getMyself()` for login/id; `listEmails()` for the primary verified email
+  when the account email is private), upserts the user with provider
+  `"GitHub"`, and reuses the existing session-issue logic unchanged. The
+  shared `RestApi` interface signature follows (idToken → code).
 - Build files: drop the gwt-oauth2 compile-only dependency and the GWT module
-  inherit; remove the `google-api-client` pair from the server (GWT framework
-  dependencies `com.google.gwt.*` are untouched).
+  inherit; remove the `google-api-client` pair from the server and add the
+  scribejava-core/apis 8.3.3 pair plus `org.kohsuke:github-api:1.330` (GWT
+  framework dependencies `com.google.gwt.*` are untouched).
 - Wording: login button and tabulation notice updated to GitHub wording.
 - Identity continuity (existing behavior, preserved): session uid resolution by
   email stays; new GitHub logins insert with provider `"GitHub"`; provider-
@@ -137,6 +165,10 @@ switch that identity provider to GitHub.
   email-resolution based: a login whose verified email matches an existing
   row resolves that row's uid. Existing provider-"Google" rows SHALL NOT be
   modified.
+- R7. The server's exchange and GitHub identity fetch SHALL ride the
+  established maintained libraries named in Approach — ScribeJava 8.3.3
+  (GitHubApi) and org.kohsuke:github-api 1.330 — and SHALL NOT hand-roll HTTP
+  calls to the GitHub OAuth token or user endpoints.
 
 ## Success criteria
 
@@ -147,6 +179,7 @@ switch that identity provider to GitHub.
 | SC-3 | Failed authorization creates nothing | Behavioral | Submit an invalid or aborted authorization (bad code, state mismatch, or declined flow) to the login path; login returns failure and no user or session row is created (users table read before/after) |
 | SC-4 | No active Google OAuth surface remains in the code | Structural | Grep the repo: `accounts.google.com` in client login code, `GoogleIdToken`, `google-api-client` in build scripts, non-comment `gwt-oauth2` references, and the OAuth2 GWT `inherits` → 0 matches (GWT framework `com.google.gwt.*` references untouched) |
 | SC-5 | The client secret is confined to server-side runtime configuration | Structural | `detect-secrets` scan (repo wrapper) reports no committed secret; `client_secret`/`GITHUB_CLIENT_SECRET` appears only in server-module code reading the properties-file config; shared/ui sources contain no secret value |
+| SC-6 | The server's exchange and identity ride the named libraries — no bespoke HTTP plumbing for those steps | Structural | Server `build.gradle` declares `com.github.scribejava:scribejava-core/-apis:8.3.3` and `org.kohsuke:github-api:1.330`; grep server sources for `github.com/login/oauth` and `api.github.com` literals → 0 matches (the endpoint URLs live inside the libraries; app code calls the library APIs) |
 
 ## Out of scope
 
@@ -173,7 +206,9 @@ switch that identity provider to GitHub.
   criteria bound the blast radius to the login path.
 - Traceability: R1-R3 implement the stated switch; R4 follows from GitHub's
   required server-side exchange and the no-committed-secrets floor; R5/R6
-  preserve existing behavior (gap coverage). Every SC maps to its requirement
-  (SC-1→R1,R2; SC-2→R6; SC-3→R5; SC-4→R3; SC-5→R4).
+  preserve existing behavior (gap coverage); R7 is the developer-stated
+  library requirement ("no bespoke trash": named pair on the jdk8 floor).
+  Every SC maps to its requirement (SC-1→R1,R2; SC-2→R6; SC-3→R5; SC-4→R3;
+  SC-5→R4; SC-6→R7).
 
 Byline: 🤖 Co-authored with AI: OpenCode (huggingface/zai-org/GLM-5.3-Flash)

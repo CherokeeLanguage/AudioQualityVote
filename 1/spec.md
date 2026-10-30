@@ -25,6 +25,10 @@ The build is pinned to the Gradle 7 era and rides a dead artifact repository:
 Root cause: the toolchain pins (wrapper distribution, plugin releases, jcenter)
 were set in the Gradle 7 era and never revisited. The stated problem is that
 staleness itself: bring the build to the current latest stable Gradle.
+Discovered during this filing (developer-stated): the project is a JDK 8
+project — the app deploys to a JDK 8 runtime — and the checked-in
+`compileJava.options.release = 11` flags are inconsistent with that target:
+class-file major 55 cannot load on JDK 8. The target correction is in scope.
 
 ## Verified current state
 
@@ -36,6 +40,10 @@ staleness itself: bring the build to the current latest stable Gradle.
   sets no archive name (its war keeps the default project-based name and is
   consumed as a gretty overlay by the war module — `overlay ':audio-quality-vote-ui'`
   in its gretty block).
+- The project is a JDK 8 project (developer-stated deployment target). Today's
+  `compileJava.options.release = 11` in all six build files produces
+  class-file major 55 — bytecode that cannot load on a JDK 8 runtime; the
+  flags predate this change and are inconsistent with the project's target.
 - Dev environment JDKs: OpenJDK 21 and 25 in `/usr/lib/jvm` (no JDK 11 in that
   location; `compileJava.options.release = 11` pins the bytecode target
   independently of the compiling JDK). No toolchain-resolver plugin is
