@@ -1,19 +1,13 @@
 plugins {
   id "java-library"
-  id "eclipse-wtp"
-  id "com.diffplug.eclipse.apt"
-  id "org.wisepersist.gwt"
   id "org.gretty"
 }
 
 compileJava.options.encoding = 'UTF-8'
-compileJava.options.release = 11
+compileJava.options.release = 8
 
 compileTestJava.options.encoding = 'UTF-8'
-compileTestJava.options.release = 11
-
-java.toolchain.languageVersion = JavaLanguageVersion.of(11)
-java.toolchain.vendor = JvmVendorSpec.ADOPTOPENJDK
+compileTestJava.options.release = 8
 
 gretty {
 	servletContainer = 'tomcat9'
@@ -21,17 +15,10 @@ gretty {
 
 allprojects {
 	repositories {
-		jcenter()
 		mavenCentral()
 		maven { url 'https://jitpack.io' }
 	}
 }
 
 dependencies {
-}
-
-eclipse {
-	project {
-		name = 'Audio Quality Vote'
-	}
 }

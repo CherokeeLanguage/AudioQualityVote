@@ -1,52 +1,28 @@
 plugins {
 	id "war"
-	id "eclipse-wtp"
 	id "org.gretty"
-	id "com.diffplug.eclipse.apt"
 }
 
 compileJava.options.encoding = 'UTF-8'
-compileJava.options.release = 11
+compileJava.options.release = 8
 
 compileTestJava.options.encoding = 'UTF-8'
-compileTestJava.options.release = 11
+compileTestJava.options.release = 8
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(11)
-java.toolchain.vendor = JvmVendorSpec.ADOPTOPENJDK
- 
 repositories {
-		jcenter()
-		maven { url 'https://jitpack.io' }
+	maven { url 'https://jitpack.io' }
 }
 
 gretty {
-	httpPort = 8080;
+	httpPort = 8080
 	servletContainer = 'tomcat9'
 	jvmArgs = ['-Dfile.encoding=UTF-8', '-Xmx512M', '-Ddebug=true' ]
 	overlay ':audio-quality-vote-server'
 	overlay ':audio-quality-vote-ui'
-	extraResourceBase '../audio-quality-vote-ui/build/gwt/out'
+	extraResourceBase '../audio-quality-vote-ui/build/gwt/war'
 	contextPath "AudioQualityVote"
 }
 
 war {
-    archiveName "AudioQualityVote.war"
-}
-
-// Required for correct setup of APT in Eclipse
-eclipseJdt.dependsOn cleanEclipseJdt, eclipseJdtApt
-eclipseJdtApt.dependsOn cleanEclipseJdtApt, eclipseFactorypath
-eclipseFactorypath.dependsOn cleanEclipseFactorypath
-
-eclipse {
-	    // Required for correct setup of APT in Eclipse
-	    synchronizationTasks eclipseJdt
-	    
-	project {
-		name = 'Audio Quality Vote (War)'
-		referencedProjects
-	}
-	classpath {
-		downloadSources=true
-	}
+    archiveFileName = "AudioQualityVote.war"
 }

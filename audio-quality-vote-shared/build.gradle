@@ -1,38 +1,14 @@
 plugins {
 	id "java-library"
-	id "eclipse-wtp"
-	id "com.diffplug.eclipse.apt"
 }
 
 compileJava.options.encoding = 'UTF-8'
-compileJava.options.release = 11
+compileJava.options.release = 8
 
 compileTestJava.options.encoding = 'UTF-8'
-compileTestJava.options.release = 11
+compileTestJava.options.release = 8
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(11)
-java.toolchain.vendor = JvmVendorSpec.ADOPTOPENJDK
-
- 
 dependencies {
 	compileOnly 'javax.servlet:javax.servlet-api:3.0.1'
 	compileOnly 'javax.ws.rs:javax.ws.rs-api:2.1.1'
-}
-
-
-// Required for correct setup of APT in Eclipse
-eclipseJdt.dependsOn cleanEclipseJdt, eclipseJdtApt
-eclipseJdtApt.dependsOn cleanEclipseJdtApt, eclipseFactorypath
-eclipseFactorypath.dependsOn cleanEclipseFactorypath
-
-eclipse {
-	    // Required for correct setup of APT in Eclipse
-	    synchronizationTasks eclipseJdt
-
-	project {
-		name = 'Audio Quality Vote (Shared)'
-	}
-	classpath {
-		downloadSources=true
-	}
 }
