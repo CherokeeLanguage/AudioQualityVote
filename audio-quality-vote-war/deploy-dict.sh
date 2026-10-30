@@ -7,7 +7,7 @@ trap "echo ERROR" ERR
 
 gradle clean build war
 
-scp build/libs/AudioQualityVote.war clcom@vhost.cherokeelessons.com:/var/lib/tomcat9/webapps/AudioQualityVote.tmp
+scp build/libs/AudioQualityVote.war mconrad@vhost.cherokeedictionary.net:/opt/tomcat/webapps/CED-AudioQualityVote.tmp
 
-ssh clcom@vhost.cherokeelessons.com 'cd /var/lib/tomcat9/webapps && mv -v AudioQualityVote.tmp CED-AudioQualityVote.war'
+ssh mconrad@vhost.cherokeedictionary.net 'cd /opt/tomcat/webapps && mv -v CED-AudioQualityVote.tmp CED-AudioQualityVote.war'
 
