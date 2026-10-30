@@ -37,13 +37,16 @@
 					<h:Text
 						text="A GitHub login is required to permit correct tabulation of votes." />
 			</m:MaterialRow>
-			<m:MaterialRow  style="text-align: center">
+			<m:MaterialRow style="text-align: center">
 			<h:Div style="display: inline-block; padding: 1em;">
 				<m:MaterialLink target="_blank" href="https://github.com/CherokeeLanguage/AudioQualityVote" text="Web App Source Code"></m:MaterialLink>
 			</h:Div>
 			<h:Div style="display: inline-block; padding: 1em;">
 				<m:MaterialLink target="_blank" href="https://www.cherokeelessons.com/apps/privacy-policy---apps/" text="Privacy Policy"></m:MaterialLink>
 			</h:Div>
+			</m:MaterialRow>
+			<m:MaterialRow style="text-align: center">
+				<h:Text ui:field="buildInfo" />
 			</m:MaterialRow>
 		</m:MaterialContainer>
 	</m:MaterialPanel>

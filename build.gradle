@@ -14,6 +14,9 @@ gretty {
 }
 
 allprojects {
+	// application version — the single SemVer source of truth (AudioQualityVote#15);
+	// explicit wiring: Gradle propagates no root 'version' to subprojects on its own
+	version = '0.1.0'
 	repositories {
 		mavenCentral()
 		maven { url 'https://jitpack.io' }
