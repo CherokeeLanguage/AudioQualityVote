@@ -39,7 +39,7 @@ public interface RestApi {
 
 	@Path("user/login")
 	@POST
-	UserInfo login(@HeaderParam("id-token") String idToken);
+	UserInfo login(@HeaderParam("code") String code);
 
 	@Path("user/session-id")
 	@GET

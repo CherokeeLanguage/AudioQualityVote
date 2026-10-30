@@ -1,11 +1,11 @@
 package com.cherokeelessons.audio.quality.presenter;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import javax.inject.Inject;
 
-import org.apache.jasper.tagplugins.jstl.core.Url;
 import org.fusesource.restygwt.client.Defaults;
 import org.fusesource.restygwt.client.ServiceRoots;
 
@@ -22,9 +22,10 @@ import com.cherokeelessons.audio.quality.ui.Login;
 import com.cherokeelessons.audio.quality.ui.MainMenu;
 import com.cherokeelessons.audio.quality.ui.RecordAudio;
 import com.cherokeelessons.audio.quality.ui.Settings;
-import com.google.gwt.core.client.Callback;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.http.client.URL;
+import com.google.gwt.storage.client.Storage;
+import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.RootPanel;
 
 import elemental2.dom.DomGlobal;
@@ -38,8 +39,6 @@ import gwt.material.design.client.ui.MaterialRow;
 import gwt.material.design.client.ui.html.Heading;
 import gwt.material.design.client.ui.html.Hr;
 import gwt.material.design.client.ui.html.Text;
-import io.github.freddyboucher.gwt.oauth2.client.Auth;
-import io.github.freddyboucher.gwt.oauth2.client.AuthRequest;
 
 public class AppPresenter {
 
@@ -95,36 +94,94 @@ public class AppPresenter {
 	}
 
 	private void showLogin() {
+		final Map<String, List<String>> params = Window.Location.getParameterMap();
+		final String code = firstParam(params, "code");
+		final String state = firstParam(params, "state");
+		if (code != null && state != null) {
+			handleOAuthReturn(code, state);
+			return;
+		}
+		displayLoginView();
+	}
+
+	private static final String OAUTH_STATE_KEY = "oauth2.state";
+
+	private void handleOAuthReturn(String code, String state) {
+		final Storage storage = Storage.getSessionStorageIfSupported();
+		final String expected = storage == null ? null : storage.getItem(OAUTH_STATE_KEY);
+		if (expected != null && expected.equals(state)) {
+			if (storage != null) {
+				storage.removeItem(OAUTH_STATE_KEY);
+			}
+			loading.loading(true);
+			api.login(code).thenAccept((u) -> {
+				loading.loading(false);
+				if (u == null) {
+					DomGlobal.console.log("authorization code exchange failed");
+					displayLoginView();
+					return;
+				}
+				showMain();
+			}).exceptionally(e -> {
+				loading.loading(false);
+				DomGlobal.console.log(e.getMessage());
+				displayLoginView();
+				return null;
+			});
+			return;
+		}
+		// state mismatch or unknown state — possible CSRF: abort, offer login
+		// again. The state is consumed on success, so a replayed code URL also
+		// lands here and creates nothing.
+		DomGlobal.console.log("state mismatch - login aborted");
+		displayLoginView();
+	}
+
+	private void displayLoginView() {
 		Login view = ui.loginUi();
 		view.addAttachHandler((e) -> loading.loading(false));
 		view.lnkLogin((n) -> {
-			AuthRequest req = new AuthRequest("https", "accounts.google.com", "o/oauth2/auth", Consts.CLIENT_ID)
-					.setParameter("scope", "email profile").setParameter("response_type", "token id_token");
-			Auth.get().login(req, new Callback<Map<String, String>, Throwable>() {
-				@Override
-				public void onFailure(Throwable reason) {
-					GWT.log(null, reason);
-				}
-
-				@Override
-				public void onSuccess(Map<String, String> result) {
-					loading.loading(true);
-					api.login(result.get("id_token")).thenAccept((u) -> {
-						loading.loading(false);
-						if (u == null) {
-							DomGlobal.console.log("token verification failed");
-							return;
-						}
-						showMain();
-					}).exceptionally(e -> {
-						loading.loading(false);
-						DomGlobal.console.log(e.getMessage());
-						return null;
-					});
-				}
-			}, "access_token");
+			String stateValue = makeRandomState();
+			Storage storage = Storage.getSessionStorageIfSupported();
+			if (storage != null) {
+				storage.setItem(OAUTH_STATE_KEY, stateValue);
+			}
+			// GitHub web application flow: authorization-code form with
+			// client-side state verification on return. redirect_uri is this
+			// deployment's own origin (host page base URL) — with multiple
+			// registered callbacks, an omitted redirect_uri would route the
+			// code to the app's default callback instead of the requesting
+			// deployment.
+			String url = "https://github.com/login/oauth/authorize" //
+					+ "?client_id=" + Consts.CLIENT_ID //
+					+ "&scope=" + URL.encode("user:email") //
+					+ "&state=" + URL.encode(stateValue) //
+					+ "&redirect_uri=" + URL.encode(GWT.getHostPageBaseURL());
+			Window.Location.assign(url);
 		});
 		display.replace(view);
+	}
+
+	private static String firstParam(Map<String, List<String>> params, String name) {
+		List<String> values = params.get(name);
+		return values == null || values.isEmpty() ? null : values.get(0);
+	}
+
+	/**
+	 * 128 bits of hex entropy for the anti-CSRF {@code state} parameter.
+	 * (elemental2 1.1 exposes no Crypto surface; a CSPRNG upgrade is a noted
+	 * follow-up.)
+	 */
+	private static String makeRandomState() {
+		StringBuilder sb = new StringBuilder(32);
+		for (int i = 0; i < 8; i++) {
+			String chunk = Integer.toHexString((int) (Math.random() * 0x10000));
+			for (int j = chunk.length(); j < 4; j++) {
+				sb.append('0');
+			}
+			sb.append(chunk);
+		}
+		return sb.toString();
 	}
 
 	private void showMain() {

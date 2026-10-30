@@ -11,7 +11,7 @@ compileTestJava.options.encoding = 'UTF-8'
 compileTestJava.options.release = 8
 
 // the successor gwt plugin's task classpath omits compileOnly dependencies;
-// re-add the compile classpath so compileOnly GWT libs (e.g. gwt-oauth2) resolve
+// re-add the compile classpath so compileOnly GWT libs resolve
 tasks.withType(org.docstr.gwt.GwtCompileTask).configureEach {
 	classpath += sourceSets.main.compileClasspath
 }
@@ -64,9 +64,6 @@ dependencies {
 
 	compileOnly 'com.google.gwt:gwt-servlet:'+gwtVersion
 	compileOnly 'com.google.gwt:gwt-user:'+gwtVersion
-
-	//compileOnly "io.github.freddyboucher:gwt-oauth2:1.1"
-	compileOnly "com.github.CherokeeLanguage.gwt-oauth2:gwt-oauth2:1.2-RC1"
 
 	compileOnly ('javax.inject:javax.inject:1')
 	compileOnly ('com.google.dagger:dagger-compiler:2.36')

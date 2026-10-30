@@ -1,15 +1,16 @@
 package com.cherokeelessons.audio.quality.servlet;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
-import java.security.GeneralSecurityException;
 import java.text.Normalizer;
 import java.text.Normalizer.Form;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Properties;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.locks.ReentrantLock;
 
 import javax.servlet.http.HttpServletRequest;
@@ -38,12 +39,14 @@ import com.cherokeelessons.audio.quality.shared.UserAudioList;
 import com.cherokeelessons.audio.quality.shared.UserInfo;
 import com.cherokeelessons.audio.quality.shared.UserVoteCount;
 import com.cherokeelessons.audio.quality.shared.VoteResult;
-import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
-import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
-import com.google.api.client.http.javanet.NetHttpTransport;
-import com.google.api.client.json.JsonFactory;
-import com.google.api.client.json.gson.GsonFactory;
+import com.github.scribejava.apis.GitHubApi;
+import com.github.scribejava.core.builder.ServiceBuilder;
+import com.github.scribejava.core.model.OAuth2AccessToken;
+import com.github.scribejava.core.oauth.OAuth20Service;
 import com.opencsv.CSVWriter;
+import org.kohsuke.github.GHEmail;
+import org.kohsuke.github.GHMyself;
+import org.kohsuke.github.GitHub;
 
 @Path("/")
 public class RestApiImpl implements RestApi {
@@ -115,29 +118,92 @@ public class RestApiImpl implements RestApi {
 		}
 	}
 
+	/**
+	 * GitHub OAuth client secret, read server-side from the deployment
+	 * properties file (key {@code github.client_secret}). Never compiled into
+	 * the client bundle and never committed.
+	 */
 	@Override
-	public UserInfo login(String idToken) {
-		NetHttpTransport transport = new NetHttpTransport();
-		JsonFactory factory = new GsonFactory();
-		List<String> audience = Arrays.asList(Consts.CLIENT_ID);
-		String issuer = "accounts.google.com";
-		GoogleIdTokenVerifier verifier = //
-				new GoogleIdTokenVerifier.Builder(transport, factory) //
-						.setAudience(audience).setIssuer(issuer).build();
-		GoogleIdToken token;
+	public UserInfo login(String code) {
+		if (code == null || code.isEmpty()) {
+			return null;
+		}
+		Properties deployProperties = new Properties();
+		File file = AppPathConfig.PROPERTIES_FILE;
+		try (FileInputStream in = new FileInputStream(file.getAbsoluteFile())) {
+			deployProperties.load(in);
+		} catch (IOException e) {
+			System.err.println("Can't read " + file.getAbsolutePath() + ": " + e.getMessage());
+			return null;
+		}
+		// Exchange-side credentials ride deployment properties; the compiled
+		// Consts.CLIENT_ID is the client bundle's view of the same public id.
+		String clientId = deployProperties.getProperty("github.client_id", Consts.CLIENT_ID);
+		String clientSecret = deployProperties.getProperty("github.client_secret");
+		if (clientSecret == null || clientSecret.isEmpty()) {
+			System.err.println("github.client_secret missing from deployment properties; login refused.");
+			return null;
+		}
+		final OAuth20Service service = new ServiceBuilder(clientId) //
+				.apiSecret(clientSecret) //
+				.build(GitHubApi.instance());
+		OAuth2AccessToken accessToken;
 		try {
-			token = verifier.verify(idToken);
-		} catch (GeneralSecurityException | IOException e) {
+			accessToken = service.getAccessToken(code);
+		} catch (IOException | InterruptedException | ExecutionException
+				| com.github.scribejava.core.exceptions.OAuthException e) {
+			System.err.println("GitHub code exchange failed: " + e.getMessage());
 			return null;
 		}
-		if (token == null) {
+		if (accessToken == null || accessToken.getAccessToken() == null) {
 			return null;
 		}
-		String oauthId = token.getPayload().getSubject();
-		String email = token.getPayload().getEmail();
-		dao().addUser(AppPathConfig.TABLE_PREFIX, "Google", oauthId, email);
-		dao().updateEmail(AppPathConfig.TABLE_PREFIX, "Google", oauthId, email);
+		String oauthId;
+		String email;
+		try {
+			GitHub github = GitHub.connectUsingOAuth(accessToken.getAccessToken());
+			GHMyself myself = github.getMyself();
+			oauthId = Long.toString(myself.getId());
+			email = myself.getEmail();
+			if (!isRecordableEmail(email)) {
+				// profile address private, absent, or a noreply alias —
+				// resolve the primary verified email from the user's email
+				// list (the user:email scope authorizes this)
+				String candidate = null;
+				for (GHEmail mail : myself.listEmails()) {
+					if (!mail.isVerified() || !isRecordableEmail(mail.getEmail())) {
+						continue;
+					}
+					if (mail.isPrimary()) {
+						candidate = mail.getEmail();
+						break;
+					}
+					if (candidate == null) {
+						candidate = mail.getEmail();
+					}
+				}
+				if (candidate != null) {
+					email = candidate;
+				}
+			}
+		} catch (IOException e) {
+			System.err.println("GitHub identity fetch failed: " + e.getMessage());
+			return null;
+		}
+		if (email == null || email.isEmpty()) {
+			System.err.println("GitHub identity has no usable verified email; login refused.");
+			return null;
+		}
+		// Email-based identity: an account is its verified email. A login
+		// whose email matches an existing row — regardless of which provider
+		// created it — rides that row's uid unchanged; no second row is
+		// created. Only an email never seen before inserts a new row.
 		long uid = dao().uidByEmail(AppPathConfig.TABLE_PREFIX, email);
+		if (uid == 0) {
+			dao().addUser(AppPathConfig.TABLE_PREFIX, "GitHub", oauthId, email);
+			dao().updateEmail(AppPathConfig.TABLE_PREFIX, "GitHub", oauthId, email);
+			uid = dao().uidByEmail(AppPathConfig.TABLE_PREFIX, email);
+		}
 		dao().updateLastLogin(AppPathConfig.TABLE_PREFIX, uid);
 		dao().scanForNewEntries(AppPathConfig.TABLE_PREFIX, uid);
 		UserInfo info = new UserInfo();
@@ -149,6 +215,15 @@ public class RestApiImpl implements RestApi {
 			dao().deleteOldestSessions(AppPathConfig.TABLE_PREFIX, uid, sessionCount - 5);
 		}
 		return info;
+	}
+
+	/**
+	 * A recordable email is non-empty and not a GitHub noreply alias — an
+	 * alias is not the account's real address and must not drive identity
+	 * continuation.
+	 */
+	private static boolean isRecordableEmail(String email) {
+		return email != null && !email.isEmpty() && !email.contains("@users.noreply.github.com");
 	}
 
 	@Override
