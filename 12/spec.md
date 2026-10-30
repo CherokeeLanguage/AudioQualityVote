@@ -24,7 +24,7 @@ currently masked by `null`:
 - `uid==0` after user-row insert — not even checked today; the flow continues against a
   nonexistent row (session issuance for uid 0).
 
-Grounded against current source (RestApiImpl.java:126-218). The client side already carries
+Grounded against current source (`audio-quality-vote-server/src/main/java/com/cherokeelessons/audio/quality/servlet/RestApiImpl.java`, the `login` method). The client side already carries
 a failure path: `AppPresenter.handleOAuthReturn` calls
 `api.login(code).thenAccept(...).exceptionally(...)` — an HTTP error reaches
 `exceptionally`, logs to the browser console, and re-shows the login view. Nothing in the
@@ -83,10 +83,10 @@ behavior change and it converts a silently-broken session into a 5xx.
 | ID | Criterion | Class | Verification instrument |
 |----|-----------|-------|-------------------------|
 | SC-1 | Invalid-code login attempts surface as a server error with a diagnostic, not a 204 | Behavioral | Local stack (mariadb container + gretty as in #2 live tests): POST `/api/user/login` with header code `probe-invalid-code` → HTTP 401 (not 204), server output shows `AQV login` exchange-failure line; no code/secret in the line |
-| SC-2 | The null-masking paths are gone: every branch maps per the table | Behavioral | Same run: POST with empty code → 400; (structural for the rest) |
+| SC-2 | The null-masking paths are gone: every branch maps per the table | Structural | Diff read of `RestApiImpl.login`: no branch returns `null`; each failure branch throws with the table's status; the runtime face is the SC-1 subset (probes exercise the exchange branch → 401 and the empty-code branch → 400 live) |
 | SC-3 | No secrets/codes/emails leak into errors or logs by construction | Structural | Diff read: no `client_secret`, `code` value, token, or email value in any thrown message or `System.err` string; all raw `getMessage()` in the flow routed through the bounded helper; SC-1's runtime line double-checks |
 | SC-4 | `uid==0` can no longer produce a session | Structural | Diff read: the post-insert re-query result is checked; 0 throws 500; no session issuance (`newSessionId`) precedes the check |
-| SC-5 | First-ever-email resolution returns 0 instead of throwing | Behavioral | Executed test against the local mariadb (db-module test, `gradle :audio-quality-vote-db:test`): call `uidByEmail` with an unknown email → returns 0 (RED pre-fix: JDBI `IllegalStateException` "statement returned no results" — the exact live-stack exception); call with a known seed row → returns that row's uid; oldest-row tie preserved with two rows on one email |
+| SC-5 | First-ever-email resolution returns 0 instead of throwing | Behavioral | Executed test against the local mariadb (db-module test, `./gradlew :audio-quality-vote-db:test`): call `uidByEmail` with an unknown email → returns 0 (RED pre-fix: JDBI `IllegalStateException` "statement returned no results" — the exact live-stack exception); call with a known seed row → returns that row's uid; oldest-row tie preserved with two rows on one email |
 
 | SC-6 | The SOP mandates wrapper-only gradle and `appStart` as default | Structural | Read of `SOP.md`: the `./gradlew` wrapper is mandated as the only gradle (system gradle prohibited) and `appStart` is the stated default for local server runs (`appStop` as halt counterpart); `appRun` appears only as the named foreground variant; grep finds no SOP instruction defaulting to `appRun` or endorsing system `gradle` |
 
