@@ -1,8 +1,10 @@
 title: Scrub code/state/iss from the OAuth callback URL after exchange
-status: open
+status: closed
 labels:
 - needs-approval
 body: ''
 created_at: '2026-10-30T17:47:09+00:00'
-updated_at: '2026-10-30T17:47:10+00:00'
+updated_at: '2026-10-30T19:28:49+00:00'
 github_url: https://github.com/CherokeeLanguage/AudioQualityVote/issues/14
+closed_at: '2026-10-30T19:28:49+00:00'
+close_reason: completed
