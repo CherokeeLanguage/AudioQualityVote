@@ -1,0 +1,42 @@
+{
+ "manifest_parse": "pass",
+ "icon_entries": [
+  [
+   "icon-192.png",
+   "any"
+  ],
+  [
+   "icon-512.png",
+   "any"
+  ],
+  [
+   "icon-maskable-192.png",
+   "maskable"
+  ],
+  [
+   "icon-maskable-512.png",
+   "maskable"
+  ]
+ ],
+ "sc4_manifest_pass": true,
+ "sc5": {
+  "svg_icon": true,
+  "ico_icon": true,
+  "apple_touch": true,
+  "manifest": true,
+  "no_shortcut_icon": true,
+  "no_alternate_icon": true
+ },
+ "sc5_pass": true,
+ "links_resolve": {
+  "icon-512.png": true,
+  "icon-maskable-192.png": true,
+  "apple-touch-icon.png": true,
+  "icon-192.png": true,
+  "favicon.svg": true,
+  "site.webmanifest": true,
+  "favicon.ico": true,
+  "icon-maskable-512.png": true
+ },
+ "links_all_resolve": true
+}
