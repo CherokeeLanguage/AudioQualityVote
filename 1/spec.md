@@ -11,10 +11,11 @@ The build is pinned to the Gradle 7 era and rides a dead artifact repository:
   **Gradle 9.8.2** (published 2026-10-19; verified against the head of
   https://gradle.org/releases/ at spec-filing time — 8.14.6 is the last
   maintenance release of the 8.x line).
-- `settings.gradle` pluginManagement pins the build to Gradle-7-era plugin
-  releases: `com.diffplug.eclipse.apt` 3.29.1, `com.github.johnrengelman.shadow`
-  6.1.0, `io.freefair.lombok` 6.0.0-m2, `org.gretty` 3.0.4, `org.wisepersist.gwt`
-  1.1.11.
+- `settings.gradle` pluginManagement pins the applied plugins to Gradle-7-era
+  releases — `com.diffplug.eclipse.apt` 3.29.1, `org.gretty` 3.0.4,
+  `org.wisepersist.gwt` 1.1.11 — and additionally declares two dead entries
+  applied by no build: `com.github.johnrengelman.shadow` 6.1.0 and
+  `io.freefair.lombok` 6.0.0-m2.
 - Every build resolves through `jcenter()` (root `build.gradle` allprojects
   block; `audio-quality-vote-war/build.gradle`). JFrog ended JCenter service on
   2024-08-15 (read-only since 2021) —
@@ -37,19 +38,22 @@ staleness itself: bring the build to the current latest stable Gradle.
   configured in the build.
 - No CI workflows exist (`.github/workflows` absent): no CI compatibility
   surface for this change.
-- `com.github.johnrengelman.shadow` is declared in pluginManagement but applied
-  by no module (checked all five module `plugins {}` blocks).
+- `com.github.johnrengelman.shadow` and `io.freefair.lombok` are declared in
+  pluginManagement but applied by no `plugins {}` block (checked the root and
+  all five module blocks; repo-wide, the only other mentions of either artifact
+  are this spec's own references).
 
 ## Approach
 
 - Bump the wrapper distribution to the current latest stable (9.8.2 at filing)
   and regenerate the wrapper files with the `wrapper` task so wrapper jar and
   scripts match the distribution.
-- Raise each pin in `settings.gradle` pluginManagement to a release that loads
-  and functions on the target Gradle major line — versions are whatever the
-  compatible releases are at implementation time, proven by the build
-  instrument (SC-2). The unused shadow pin is deleted (dead entry) rather than
-  bumped.
+- Raise the applied pins in `settings.gradle` pluginManagement (eclipse.apt,
+  gretty, wisepersist.gwt) to releases that load and function on the target
+  Gradle major line — versions are whatever the compatible releases are at
+  implementation time, proven by the build instrument (SC-2). The dead
+  entries (`shadow`, `lombok`) are deleted rather than bumped: no build
+  execution exercises them.
 - Remove `jcenter()` (root `allprojects` + war module); resolution rides
   `mavenCentral()` and the jitpack endpoint (the UI's
   `com.github.CherokeeLanguage.gwt-oauth2` resolves there).
