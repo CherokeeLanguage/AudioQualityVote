@@ -83,5 +83,8 @@
 				</h:Div>
 			</m:MaterialColumn>
 		</m:MaterialRow>
+		<m:MaterialRow style="text-align: center">
+			<h:Text ui:field="buildInfo" />
+		</m:MaterialRow>
 	</m:MaterialPanel>
 </ui:UiBinder> 

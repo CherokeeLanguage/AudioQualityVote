@@ -57,6 +57,29 @@ war {
 	rootSpec.exclude('**/*.class')
 	// successor gwt plugin does not wire its compile output into the war (v1 did)
 	from tasks.named('gwtCompile').map { it.war }
+	// stamp the deployed artifact with its build's version and UTC build date
+	// (AudioQualityVote#15); the host page is the client's metadata read surface.
+	// Per-line filter — template-engine expansion (expand) mangles this file's
+	// document.write content when the whole template is parsed as a Groovy template.
+	filesMatching('index.html') {
+		filter { String line ->
+			line.replace('${aqvVersion}', project.version.toString())
+				.replace('${aqvBuildDate}', java.time.LocalDate.now(java.time.ZoneOffset.UTC).toString())
+		}
+	}
+}
+
+// gretty's appStart serves the inplace webapp (build/inplaceWebapp), a separate
+// assembly from the war — stamp there too so the local run path (SOP stack) and
+// dev mode see the same stamped host page (AudioQualityVote#15 SC-4).
+// gretty registers this task in afterEvaluate, so configure it lazily
+tasks.matching { it.name == 'prepareInplaceWebAppFolder' }.configureEach {
+	filesMatching('index.html') {
+		filter { String line ->
+			line.replace('${aqvVersion}', project.version.toString())
+				.replace('${aqvBuildDate}', java.time.LocalDate.now(java.time.ZoneOffset.UTC).toString())
+		}
+	}
 }
 
 dependencies {
