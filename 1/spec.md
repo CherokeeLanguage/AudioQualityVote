@@ -72,10 +72,21 @@ class-file major 55 cannot load on JDK 8. The target correction is in scope.
 - Apply only the build-script adjustments the new Gradle line requires for
   this build to run (toolchain/vendor configuration included if needed) —
   application code and application dependency versions are untouched.
+- Correct the compile target to the project's JDK 8 floor: replace the
+  pre-existing `compileJava.options.release = 11` with `release = 8` in all
+  six build files (javac `--release 8` from the local JDKs 21/25 emits
+  class-file major 52; the release flag decouples bytecode from the compiling
+  JDK).
 - Decisions fixed here: stable releases only (no nightlies/RCs; the 9.8.x line
   is current); "latest" means the head of the stable releases list at
   implementation time. Staying on 7.x or moving to a maintenance-only 8.x line
   contradicts the stated intent.
+- The compile target is the project's JDK 8 floor (developer-stated "this is
+  a jdk8 project"): the pre-existing `release = 11` flags are corrected to
+  `release = 8` by this change. Bytecode-downgrade tooling exists (verified
+  live: JvmDowngrader, JavaDowngrader) but is neither needed (no library this
+  change consumes is jdk8-blocked) nor used — jar-rewrite machinery is bespoke
+  permanent infrastructure.
 
 ## Requirements
 
