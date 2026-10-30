@@ -104,9 +104,28 @@ class-file major 55 cannot load on JDK 8. The target correction is in scope.
   scripts match the distribution.
 - Raise the surviving applied pin (`org.gretty`) to a release that loads and
   functions on the target Gradle major — proven by the build instrument
-  (SC-2). The dead entries (`shadow`, `lombok`) are deleted rather than
+  (SC-2); the pin is the latest gretty release that supports Tomcat 9
+  (3.1.9; developer-stated constraint above), not a 4.x/5.x Jakarta release. The dead entries (`shadow`, `lombok`) are deleted rather than
   bumped, and `com.diffplug.eclipse.apt` is removed entirely by the R5 purge:
   no build execution exercises those three.
+_Revision (developer-stated, 2026-10-30): gretty SHALL be the latest version
+that supports Tomcat 9 — verified live: the `gretty-runner-tomcat9` artifact
+caps at **3.1.9** (Maven metadata), and Gretty 4.0.0+ moved to
+Jakarta/Tomcat 10; so the gretty pin rises to 3.1.9, not a 4.x/5.x release._
+
+_Revision (developer-stated, 2026-10-30): `release = 8` is mandatory — Tomcat
+is running on JDK 8. R4's release-8 correction therefore holds; the one
+application line that used the Java-11-only `Files.readString`
+(`audio-quality-vote-db` … `AudioQualityVoteFiles.java:41`) is replaced in
+scope with its Java-8-equivalent (`Files.readAllBytes` + String ctor) so the
+mandatory floor compiles._
+
+_Revision (2026-10-30, SC-2 carve-out): GWT rises from 2.9.0 to **2.10.0** —
+the successor plugin's dependency model is `org.gwtproject:*` only (plugin
+bytecode verified), and that group begins at 2.10.0, so the pinned 2.9.0
+cannot ride `org.docstr.gwt` at all. 2.10.0 is the nearest version the
+carve-out admits._
+
 - Succeed the terminated GWT plugin id: adopt the maintained continuation
   `org.docstr.gwt` for `org.wisepersist.gwt`. The successor is a documented
   complete rewrite (portal latest 2.2.9, created 2026-01-31) supporting
