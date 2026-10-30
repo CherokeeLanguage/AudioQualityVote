@@ -38,7 +38,7 @@ public class AudioQualityVoteFiles {
 				}
 				String text;
 				try {
-					text = Files.readString(t, StandardCharsets.UTF_8);
+					text = new String(Files.readAllBytes(t), StandardCharsets.UTF_8);
 				} catch (IOException e) {
 					e.printStackTrace();
 					return;

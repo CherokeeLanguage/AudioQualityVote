@@ -1,123 +1,97 @@
 plugins {
-	id "java"
 	id "war"
-	id "eclipse-wtp" 
-	id "org.wisepersist.gwt"
-	id "com.diffplug.eclipse.apt"
 	id "org.gretty"
+	id "org.docstr.gwt"
 }
 
 compileJava.options.encoding = 'UTF-8'
-compileJava.options.release = 11
+compileJava.options.release = 8
 
 compileTestJava.options.encoding = 'UTF-8'
-compileTestJava.options.release = 11
+compileTestJava.options.release = 8
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(11)
-java.toolchain.vendor = JvmVendorSpec.ADOPTOPENJDK
-
-tasks.withType(org.wisepersist.gradle.plugins.gwt.GwtCompile) {
-	args "-optimize", "0", "-noincremental"
-}
-
-tasks.withType(org.wisepersist.gradle.plugins.gwt.GwtSuperDev) {
-	args "-style", "PRETTY", "-strict"
-	jvmArgs "-Dgwt.watchFileChanges=false"
+// the successor gwt plugin's task classpath omits compileOnly dependencies;
+// re-add the compile classpath so compileOnly GWT libs (e.g. gwt-oauth2) resolve
+tasks.withType(org.docstr.gwt.GwtCompileTask).configureEach {
+	classpath += sourceSets.main.compileClasspath
 }
 
 gretty {
 	servletContainer = 'tomcat9'
 }
 
+def gwtVersion = '2.10.0'
+
 gwt {
 	logLevel = 'INFO'
- 
-	maxHeapSize = "2048M";
- 
-	gwtVersion='2.9.0'
- 
-	modules 'com.cherokeelessons.audio.quality.AudioQualityVote'
-	
+
+	maxHeapSize = "2048M"
+
+	gwtVersion = gwtVersion
+
+	modules = ['com.cherokeelessons.audio.quality.AudioQualityVote']
+
+	extraSourceDirs = files(
+			"../audio-quality-vote-shared/src/main/resources",
+			"../audio-quality-vote-shared/src/main/java",
+			"build/generated/sources/annotationProcessor/java/main"
+	)
+
+	style = 'PRETTY'
+	failOnError = false
+
 	compiler {
-		src += files("../audio-quality-vote-shared/src/main/resources", "../audio-quality-vote-shared/src/main/java")
-		src += files(compileJava.options.annotationProcessorGeneratedSourcesDirectory)
-		
-		disableClassMetadata = false;
-		
-		strict = true;
-		style = "PRETTY";
-		localWorkers = 2;
+		strict = true
+		optimize = 0
+		incremental = false
+		localWorkers = 2
 	}
-	
+
 	superDev {
-		src += files("../audio-quality-vote-shared/src/main/resources", "../audio-quality-vote-shared/src/main/java")
-		src += files(project.eclipse.jdt.apt.genSrcDir)
-		
-		noPrecompile = true;
-		failOnError = false;
-		bindAddress = "0.0.0.0";
-	}
-	
-	eclipse {
-		addGwtContainer = true;
+		precompile = false
+		bindAddress = "0.0.0.0"
 	}
 }
 
 war {
 	rootSpec.exclude('**/*.class')
+	// successor gwt plugin does not wire its compile output into the war (v1 did)
+	from tasks.named('gwtCompile').map { it.war }
 }
 
 dependencies {
 	implementation project(':audio-quality-vote-shared')
 
-	compileOnly 'com.google.gwt:gwt-servlet:'+gwt.gwtVersion
-	compileOnly 'com.google.gwt:gwt-user:'+gwt.gwtVersion
-	
+	compileOnly 'com.google.gwt:gwt-servlet:'+gwtVersion
+	compileOnly 'com.google.gwt:gwt-user:'+gwtVersion
+
 	//compileOnly "io.github.freddyboucher:gwt-oauth2:1.1"
 	compileOnly "com.github.CherokeeLanguage.gwt-oauth2:gwt-oauth2:1.2-RC1"
-	
+
 	compileOnly ('javax.inject:javax.inject:1')
 	compileOnly ('com.google.dagger:dagger-compiler:2.36')
 	compileOnly ('com.google.dagger:dagger-gwt:2.36')
 	annotationProcessor ('com.google.dagger:dagger-compiler:2.36')
-	
+
 	compileOnly 'com.ekotrope:gwt-completablefuture:1.0.0'
-	
+
 	compileOnly 'org.fusesource.restygwt:restygwt:2.2.7'
 	compileOnly "com.fasterxml.jackson.core:jackson-annotations:2.11.3"
 	compileOnly "com.fasterxml.jackson.core:jackson-databind:2.11.3"
 	compileOnly 'com.google.code.findbugs:jsr305:3.0.0' //required for restygwt compile
 	compileOnly 'com.github.nmorel.gwtjackson:gwt-jackson:0.15.4'
 	compileOnly 'javax.xml.bind:jaxb-api:2.3.+'
- 
+
 	compileOnly project(':audio-quality-vote-shared')
-	compileOnly 'javax.xml.bind:jaxb-api:2.3.+'
-	
-	//ui
-	compileOnly 'com.github.gwtmaterialdesign:gwt-material:2.4.+'
-	compileOnly 'com.github.gwtmaterialdesign:gwt-material-addins:2.4.+'
-	compileOnly 'com.github.gwtmaterialdesign:gwt-material-table:2.4.+'
-	compileOnly 'com.github.gwtmaterialdesign:gwt-material-themes:2.4.+'
+
+	//ui (2.8.5: GWT 2.10-compatible — 2.4.x declares the removed ie10 user.agent)
+	compileOnly 'com.github.gwtmaterialdesign:gwt-material:2.8.5'
+	compileOnly 'com.github.gwtmaterialdesign:gwt-material-addins:2.8.5'
+	compileOnly 'com.github.gwtmaterialdesign:gwt-material-table:2.8.5'
+	compileOnly 'com.github.gwtmaterialdesign:gwt-material-themes:2.8.5'
 	compileOnly 'com.google.elemental2:elemental2-dom:1.1.+'
-	
+
 	//restapi
 	compileOnly 'javax.servlet:javax.servlet-api:3.0.1'
 	compileOnly 'javax.ws.rs:javax.ws.rs-api:2.1.1'
-}
-
-// Required for correct setup of APT in Eclipse
-eclipseJdt.dependsOn cleanEclipseJdt, eclipseJdtApt
-eclipseJdtApt.dependsOn cleanEclipseJdtApt, eclipseFactorypath
-eclipseFactorypath.dependsOn cleanEclipseFactorypath
-
-eclipse {
-	    // Required for correct setup of APT in Eclipse
-	    synchronizationTasks eclipseJdt
-
-	project {
-		name = 'Audio Quality Vote (UI)'
-	}
-	classpath {
-		downloadSources=true
-	}
 }
