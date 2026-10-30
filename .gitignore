@@ -25,3 +25,7 @@ AudioQualityVote-db.properties
 /test-audio/
 /audio-quality-vote-server-db.properties
 /.opencode/
+
+# operator/deployment properties (hold credentials; maintain locally, never commit)
+AudioQualityVote.properties
+AudioQualityVote-prod.properties
