@@ -27,9 +27,14 @@ release train — version identity advances with every merge, not with cut relea
 
 ## Approach
 
-1. **Version source of truth — root `build.gradle` `version`.** Gradle's native
-   multi-module property: all five subprojects inherit it; one declaration, one bump
-   location per PR.
+1. **Version source of truth — one declaration in the root `build.gradle`.** One
+   `version` declaration in the root build script, with explicit wiring so every
+   project in the multi-module build (root plus all five subprojects) resolves that
+   value. Gradle does not propagate a root `version` to subprojects on its own: with
+   the wrapper's pinned Gradle 9.8.2, a bare root declaration leaves subprojects at
+   the `unspecified` default. Known-good pattern: an
+   `allprojects { version = '<declared value>' }` block in the root `build.gradle`.
+   One declaration, one bump location per PR.
 2. **Stamp at packaging time.** A build stamps its own version and UTC build date into
    the artifact it produces — `<meta name="aqv-version">` / `<meta name="aqv-build-date">`
    on the host page (`index.html`) of the produced `AudioQualityVote.war`. Stamping at
@@ -54,9 +59,13 @@ carries a valid SemVer version.
 
 ## Requirements
 
-- R-1. The application version's single source of truth SHALL be the `version` property
-  in the root `build.gradle`, inherited by all five subprojects. Once this change lands,
-  the property's value on trunk SHALL be a valid SemVer string (MAJOR.MINOR.PATCH per
+- R-1. The application version SHALL be declared exactly once, in the root
+  `build.gradle`. Every Gradle project in the multi-module build — the root project
+  and all five subprojects — SHALL resolve that declared value as its own `version`
+  (the propagation is explicit wiring in the root script, e.g. an
+  `allprojects { version = … }` block — not inheritance; the wiring exemplar is
+  guidance, the checked contract is the resolution). Once this change lands, the
+  declared value on trunk SHALL be a valid SemVer string (MAJOR.MINOR.PATCH per
   https://semver.org/) — never Gradle's `unspecified` default.
 - R-2. Every PR SHALL carry exactly one version bump of that property in its own diff,
   such that the version on trunk after a merge equals the pre-merge trunk version
