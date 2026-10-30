@@ -174,10 +174,13 @@ switch that identity provider to GitHub.
   email-resolution based: a login whose verified email matches an existing
   row resolves that row's uid — deterministically (the email-match resolution
   orders explicitly and prefers the earliest matching row; it never relies on
-  engine scan order). Existing provider-"Google" rows SHALL NOT be modified;
-  a GitHub login may then legitimately leave both provider rows sharing an
-  email (the user-insert dedupes on provider+oauth_id), which the
-  deterministic resolution absorbs.
+  engine scan order). Existing provider-"Google" rows SHALL NOT be
+  re-attributed: their identity fields (`oauth_provider`, `oauth_id`) and
+  email remain unchanged — session bookkeeping on the resolved row
+  (e.g. `updateLastLogin`) is login behavior, not re-attribution — and no
+  data migration touches them; a GitHub login may then legitimately leave
+  both provider rows sharing an email (the user-insert dedupes on
+  provider+oauth_id), which the deterministic resolution absorbs.
 - R7. The server's exchange and GitHub identity fetch SHALL ride the
   established maintained libraries named in Approach — ScribeJava 8.3.3
   (GitHubApi) and org.kohsuke:github-api 1.330 — and SHALL NOT hand-roll HTTP
@@ -189,11 +192,11 @@ switch that identity provider to GitHub.
 |----|-----------|-------|-------------------------|
 | SC-1 | A user completing login through GitHub on a locally run deployment is authenticated: a session is issued and the users table records the login with `oauth_provider='GitHub'` | Behavioral | Prerequisite: a GitHub OAuth app exists with its dev credentials configured and its callback matching the local deployment. Run the app via the wrapper (gretty/tomcat9, contextPath AudioQualityVote), drive the web flow to completion in a browser, then read the user row: provider value `"GitHub"` and issued session observed |
 | SC-2 | A vote cast under a GitHub-issued session is attributed to that user's uid (unchanged counting behavior) | Behavioral | Using the SC-1 session, perform one vote through the voting flow; verify the vote record attaches to that uid (DB read or API result) |
-| SC-3 | Failed authorization creates nothing | Behavioral | Submit an invalid or aborted authorization (bad code, state mismatch, or declined flow) to the login path; login returns failure and no user or session row is created (users table read before/after); in the driven browser session at flow end, the login view is presented again — no dead-end state |
+| SC-3 | Failed authorization creates nothing — including through the state gate | Behavioral | (a) Required gate-distinguishing variant: submit a valid authorization code with a mismatched `state` through the client path (an implementation lacking the state gate would exchange that code and create the rows) → login fails and no user or session row is created (users table read before/after); (b) additionally drive a declined flow and a bad code: login fails, no rows; in the driven browser session at flow end, the login view is presented again — no dead-end state |
 | SC-4 | No active Google OAuth surface remains in the code | Structural | Grep the repo: `accounts.google.com` in client login code, `GoogleIdToken`, `google-api-client` in build scripts, non-comment `gwt-oauth2` references, the OAuth2 GWT `inherits`, and the Google login wording (`Login with Google`, `A Google login`) → 0 matches; `Login.ui.xml`'s login button and tabulation-notice copy each reference GitHub and carry no Google reference (read of the two elements); GWT framework `com.google.gwt.*` references untouched |
 | SC-5 | The client secret is confined to server-side runtime configuration | Structural | `detect-secrets` scan (repo wrapper) reports no committed secret; `client_secret`/`GITHUB_CLIENT_SECRET` appears only in server-module code reading the properties-file config; shared/ui sources contain no secret value |
 | SC-6 | The server's exchange and identity ride the named libraries — no bespoke HTTP plumbing for those steps | Structural | Server `build.gradle` declares `com.github.scribejava:scribejava-core/-apis:8.3.3` and `org.kohsuke:github-api:1.330`; grep server sources for `github.com/login/oauth` and `api.github.com` literals → 0 matches (the endpoint URLs live inside the libraries; app code calls the library APIs) |
-| SC-7 | A GitHub login whose verified email matches a pre-existing provider-"Google" row resolves that pre-existing row's uid, deterministically — same uid on repeated logins, vote history attaching through it | Behavioral | Local dev database seeded with a provider-"Google" row whose email equals the test account's GitHub verified email; run the SC-1 web flow; assert the resolved uid is the seeded row's uid; repeat the login and assert the same uid |
+| SC-7 | A GitHub login whose verified email matches a pre-existing provider-"Google" row resolves that pre-existing row's uid, deterministically — same uid on repeated logins, vote history attaching through it | Behavioral | Local dev database seeded with a provider-"Google" row whose email equals the test account's GitHub verified email; run the SC-1 web flow; assert the resolved uid is the seeded row's uid; repeat the login and assert the same uid; after both logins assert the seeded row's `oauth_provider` still reads "Google" and its `oauth_id`/email fields unchanged (re-attribution probe) |
 | SC-8 | A login whose test account's primary email is private records the account's primary verified email — not null and not a noreply alias — via the email-list route | Behavioral | Fixture GitHub account with its primary email set private (email-privacy toggle); confirm the authorize request carries the `user:email` scope (client code read); run the SC-1 web flow; read the recorded email and assert it equals the fixture account's primary verified address |
 
 ## Out of scope
@@ -228,7 +231,7 @@ switch that identity provider to GitHub.
   of login — "correct tabulation of votes" — with the mixed-provider cohort's
   continuation made deterministic; R7 is the developer-stated library
   requirement ("no bespoke trash": named pair on the jdk8 floor). Every SC
-  maps to its requirement (SC-1→R1,R2; SC-2→R6; SC-3→R5; SC-4→R3; SC-5→R4;
+  maps to its requirement (SC-1→R1,R2; SC-2→R6; SC-3→R1,R5; SC-4→R3; SC-5→R4;
   SC-6→R7; SC-7→R6; SC-8→R1,R2).
 
 Byline: 🤖 Co-authored with AI: OpenCode (huggingface/zai-org/GLM-5.3-Flash)
