@@ -24,7 +24,7 @@
 					<m:MaterialPanel>
 						<m:MaterialContainer>
 							<m:MaterialButton ui:field="btnLogin"
-								text="Login with Google" />
+								text="Login with GitHub" />
 						</m:MaterialContainer>
 					</m:MaterialPanel>
 				</m:MaterialColumn>
@@ -35,7 +35,7 @@
 			</m:MaterialRow>
 			<m:MaterialRow style="text-align: center">
 					<h:Text
-						text="A Google login is required to permit correct tabulation of votes." />
+						text="A GitHub login is required to permit correct tabulation of votes." />
 			</m:MaterialRow>
 			<m:MaterialRow  style="text-align: center">
 			<h:Div style="display: inline-block; padding: 1em;">

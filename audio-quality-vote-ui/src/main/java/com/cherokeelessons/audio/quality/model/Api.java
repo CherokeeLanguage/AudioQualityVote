@@ -119,14 +119,14 @@ public class Api {
 		return cfv;
 	}
 
-	public CompletableFuture<UserInfo> login(String idToken) {
+	public CompletableFuture<UserInfo> login(String code) {
 		CallbackFuture<UserInfo> cf = new CallbackFuture<>();
 		CompletableFuture<UserInfo> future = cf.future();
-		if (idToken == null) {
+		if (code == null) {
 			runasync.run(() -> future.complete(null));
 			return future;
 		}
-		call(cf).login(idToken);
+		call(cf).login(code);
 		future.thenApply((info) -> {
 			state.sessionId(info.getSessionId());
 			state.uid(info.getUid());

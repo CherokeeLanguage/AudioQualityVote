@@ -365,7 +365,7 @@ public interface AudioQualityVoteDao extends SqlObject {
 	}
 
 	@SqlQuery("select uid from <table>_users" //
-			+ " where email=:email")
+			+ " where email=:email order by uid asc limit 1")
 	long uidByEmail(@Define("table")String tablePrefix, @Bind("email") String email);
 
 	@SqlUpdate("insert into <table>_users (oauth_provider, oauth_id, email)"
