@@ -1,6 +1,8 @@
 # Spec: Upgrade build to the current latest stable Gradle
 
-Intent (developer-stated): "upgrade to latest gradle."
+Intent (developer-stated): "upgrade to latest gradle" — extended by the
+follow-up (developer-stated): "adjust to also purge all Eclipse configs and
+files and folders as part of the Gradle update cleanup."
 
 ## Problem
 
@@ -44,6 +46,19 @@ class-file major 55 cannot load on JDK 8. The target correction is in scope.
   `compileJava.options.release = 11` in all six build files produces
   class-file major 55 — bytecode that cannot load on a JDK 8 runtime; the
   flags predate this change and are inconsistent with the project's target.
+- Eclipse IDE integration spans the build: `eclipse-wtp` and
+  `com.diffplug.eclipse.apt` are applied in all six build files, the diffplug
+  pin (3.29.1) sits in `settings.gradle`, `eclipseJdt`/`eclipseJdtApt`/
+  `eclipseFactorypath` task-wiring blocks exist in the five module files, and
+  `eclipse {}` config blocks in all six (root project name, downloadSources,
+  the ui `addGwtContainer`). On disk, git-ignored generated metadata exists in
+  every module + root: `.project`, `.classpath`, `.factorypath`, `.settings/`
+  (regenerable IDE files; nothing Eclipse-related is tracked — verified via
+  `git ls-files`). The ui module additionally reads two eclipse/apt-provided
+  source dirs into the GWT compiler wiring — `project.eclipse.jdt.apt.genSrcDir`
+  (`superDev.src`) and `compileJava.options.annotationProcessorGeneratedSourcesDirectory`
+  (`compiler.src`) — the dagger-APT generated client sources feeding
+  `GwtCompile`; removing the plugin integration orphans those reads.
 - Dev environment JDKs: OpenJDK 21 and 25 in `/usr/lib/jvm` (no JDK 11 in that
   location; `compileJava.options.release = 11` pins the bytecode target
   independently of the compiling JDK). No toolchain-resolver plugin is
@@ -77,6 +92,16 @@ class-file major 55 cannot load on JDK 8. The target correction is in scope.
   six build files (javac `--release 8` from the local JDKs 21/25 emits
   class-file major 52; the release flag decouples bytecode from the compiling
   JDK).
+- Purge the Eclipse IDE integration end-to-end: remove the `eclipse-wtp` and
+  `com.diffplug.eclipse.apt` plugin applications (all six build files), the
+  diffplug pin in `settings.gradle`, the `eclipseJdt`/`eclipseJdtApt`/
+  `eclipseFactorypath` task-wiring blocks and `eclipse {}` config blocks, and
+  the ui-side `project.eclipse.jdt.apt.genSrcDir` / `addGwtContainer` reads;
+  delete the generated metadata (`.project`, `.classpath`, `.factorypath`,
+  `.settings/`) in every module and at root. Re-point the GWT compiler's
+  annotation-processor source input at Gradle's own generated-sources output
+  (both `compiler.src` and `superDev.src`) so the dagger-APT handoff keeps
+  flowing.
 - Decisions fixed here: stable releases only (no nightlies/RCs; the 9.8.x line
   is current); "latest" means the head of the stable releases list at
   implementation time. Staying on 7.x or moving to a maintenance-only 8.x line
@@ -102,6 +127,13 @@ class-file major 55 cannot load on JDK 8. The target correction is in scope.
   `release = 11` flags), and the produced war artifacts are unchanged —
   `AudioQualityVote.war` from the server and war modules; the ui module's
   default-named war overlay as it stands today.
+- R5. The build SHALL be purged of the Eclipse IDE integration: no
+  `eclipse-wtp` or `com.diffplug.eclipse.apt` plugin applications, no
+  `eclipseJdt`/`eclipseJdtApt`/`eclipseFactorypath` task-wiring or `eclipse {}`
+  config blocks in any build file, and no Eclipse metadata files or folders
+  (`.project`, `.classpath`, `.factorypath`, `.settings/`) present in the
+  repo tree; the dagger-annotation-processor → GWT-compiler source handoff
+  SHALL keep functioning after the purge.
 
 ## Success criteria
 
@@ -111,6 +143,8 @@ class-file major 55 cannot load on JDK 8. The target correction is in scope.
 | SC-2 | `./gradlew build` completes successfully under the wrapper-pinned Gradle and produces the same war artifacts as today: `AudioQualityVote.war` from the server and war modules, the ui module's default-named war overlay | Behavioral | Run `./gradlew build` (via the wrapper); capture exit code 0 and `BUILD SUCCESSFUL`; confirm in the build output the three artifact surfaces: `AudioQualityVote.war` in the war module's and the server module's build output, and the default-named war artifact in the ui module's build output |
 | SC-3 | No dead repository remains in build scripts | Structural | Grep `*.gradle` for `jcenter` → 0 matches; dependency resolution from live repositories evidenced in the SC-2 build output |
 | SC-4 | Compiled bytecode runs on the project's JDK 8 floor (today's release-11 flags cannot load on JDK 8) | Structural | `javap -verbose` on a class compiled by the new build (e.g. server module) reports class-file major version 52 |
+| SC-5 | No Eclipse IDE integration remains in build files or the tree | Structural | Grep the six `build.gradle` + `settings.gradle` for `eclipse-wtp`, `com.diffplug.eclipse.apt`, `eclipseJdt`, `eclipseFactorypath`, and `eclipse {` config blocks → 0 matches; search the tree (excluding `.issues`) for `.project`/`.classpath`/`.factorypath`/`.settings` → no entries present |
+| SC-6 | The dagger-annotation-processor → GWT-compiler source handoff keeps functioning after the purge | Behavioral | Run the wisepersist plugin's GWT compile task via the wrapper (task name read from the plugin's task catalog at run time); exit 0 — the compile consumes the dagger-generated client sources through the re-pointed source input |
 
 ## Out of scope
 
@@ -122,10 +156,17 @@ class-file major 55 cannot load on JDK 8. The target correction is in scope.
 - Any change to the app's Java language level beyond the JDK 8 bytecode-target
   correction this spec requires (the release-11 → release-8 flag correction
   is the only app-facing compile-target change).
+- Non-Eclipse IDE integrations (the `.idea` folder is IntelliJ's — out of this
+  purge), and `.gitignore` hygiene lines (the now-dead
+  `.classpath`/`.project`/`.settings/`/`.factorypath` ignore entries remain —
+  harmless hygiene, not configuration).
 
 ## Impact
 
-- Touches: wrapper files, `settings.gradle`, all six `build.gradle` files.
+- Touches: wrapper files, `settings.gradle`, all six `build.gradle` files, and
+  the git-ignored Eclipse metadata deletions (`.project`, `.classpath`,
+  `.factorypath`, `.settings/` in root + the five modules — untracked,
+  regenerable IDE files).
 - Developer environments: the wrapper self-provisions the new distribution;
   the Gradle daemon runs on a locally installed JDK (21/25 here). Compilation
   toolchain resolution is an open point this change must resolve: the current
@@ -137,12 +178,19 @@ class-file major 55 cannot load on JDK 8. The target correction is in scope.
 - The one app-facing change this spec makes: produced classes load on the
   project's JDK 8 deployment container (today's v55 bytecode would not) — a
   deliberate correction, developer-stated, carried by R4/SC-4.
+- Eclipse purge (developer-stated follow-up): the Eclipse IDE workflow
+  (workspace project import, JDT/FactoryPath generation, wtp integration) is
+  removed by intent; consumers outside the repo: none verified (no CI, no
+  published artifacts). The uncertain part is the ui module's GWT-compiler
+  source re-wiring after the diffplug/apt reads vanish (R5/SC-6 evidence).
 - Risk: the era-jump of the plugin pins (gretty, wisepersist GWT plugin,
   eclipse.apt, freefair lombok) is the uncertain part; mitigated by SC-2
   evidence. No external consumers (no CI, no published build artifacts).
 - Traceability: the staleness facts above require R1-R3; R4 restores the
   app-facing bytecode floor (JDK 8, major 52 — developer-stated project
-  target) that the stale release-11 flags violated, plus the war artifacts.
-  Every SC maps to its requirement (SC-1→R1, SC-2/SC-4→R1, R4, SC-2→R2, SC-3→R3).
+  target) that the stale release-11 flags violated, plus the war artifacts;
+  R5 is the developer-stated follow-up (Eclipse purge), covering the plugin
+  surfaces and the GWT handoff its removal endangers. Every SC maps to its
+  requirement (SC-1→R1; SC-2→R1,R2,R4; SC-3→R3; SC-4→R4; SC-5→R5; SC-6→R5).
 
 Byline: 🤖 Co-authored with AI: OpenCode (huggingface/zai-org/GLM-5.3-Flash)
