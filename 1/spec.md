@@ -87,7 +87,7 @@ staleness itself: bring the build to the current latest stable Gradle.
 | ID | Criterion | Class | Verification instrument |
 |----|-----------|-------|-------------------------|
 | SC-1 | The wrapper pins the current latest stable Gradle release (9.8.2 at filing; a newer stable published before implementation supersedes it) | Structural | Read `gradle/wrapper/gradle-wrapper.properties` `distributionUrl`; the pinned version equals the head entry of the stable releases list at https://gradle.org/releases/ at check time |
-| SC-2 | `./gradlew build` completes successfully under the wrapper-pinned Gradle and produces `AudioQualityVote.war` | Behavioral | Run `./gradlew build` (via the wrapper); capture exit code 0 and `BUILD SUCCESSFUL`; confirm the war artifact exists in the war module's build output |
+| SC-2 | `./gradlew build` completes successfully under the wrapper-pinned Gradle and produces the same war artifacts as today: `AudioQualityVote.war` from the server and war modules, the ui module's default-named war overlay | Behavioral | Run `./gradlew build` (via the wrapper); capture exit code 0 and `BUILD SUCCESSFUL`; confirm in the build output the three artifact surfaces: `AudioQualityVote.war` in the war module's and the server module's build output, and the default-named war artifact in the ui module's build output |
 | SC-3 | No dead repository remains in build scripts | Structural | Grep `*.gradle` for `jcenter` → 0 matches; dependency resolution from live repositories evidenced in the SC-2 build output |
 | SC-4 | Compiled bytecode keeps the Java 11 target (unchanged behavior the upgrade puts at risk) | Structural | `javap -verbose` on a class compiled by the new build (e.g. server module) reports class-file major version 55 |
 
