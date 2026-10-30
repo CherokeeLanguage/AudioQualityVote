@@ -1,0 +1,19 @@
+# Template for the deployment properties read by the AudioQualityVote app
+# (AppPathConfig lookup: /opt/tomcat/webapps/AudioQualityVote.properties on the
+# dict host). Copy to AudioQualityVote-prod.properties (repo root, git-ignored),
+# fill values, and the deploy script ships it to the remote and renames it
+# into place before the war publish.
+# NEVER commit real credentials.
+
+# MariaDB/MySQL JDBC url; allowMultiQueries is required by the vote path
+jdbc.url=jdbc:mysql://HOST:PORT/DBNAME?allowMultiQueries=true&useUnicode=true&characterEncoding=utf8
+jdbc.username=DBUSER
+jdbc.password=DBPASSWORD
+
+# folder holding the recorded audio files (must exist; writable by tomcat)
+audio.folder=/PATH/TO/AUDIO_FOLDER
+
+# GitHub OAuth app (public id is also compiled into the UI bundle as Consts.CLIENT_ID);
+# the secret is read server-side from this file only
+github.client_id=CLIENT_ID
+github.client_secret=CLIENT_SECRET

@@ -364,8 +364,15 @@ public interface AudioQualityVoteDao extends SqlObject {
 		}
 	}
 
-	@SqlQuery("select uid from <table>_users" //
-			+ " where email=:email order by uid asc limit 1")
+	/**
+	 * Resolves the account row for an email-based identity. Always returns a
+	 * value — {@code coalesce(min(uid),0)} — so a first-ever email yields 0
+	 * (the documented insert path) instead of a JDBI "statement returned no
+	 * results" explosion on the primitive-long return. {@code min(uid)} keeps
+	 * the former {@code order by uid asc limit 1} selection: the oldest
+	 * matching row.
+	 */
+	@SqlQuery("select coalesce(min(uid),0) from <table>_users where email=:email")
 	long uidByEmail(@Define("table")String tablePrefix, @Bind("email") String email);
 
 	@SqlUpdate("insert into <table>_users (oauth_provider, oauth_id, email)"
