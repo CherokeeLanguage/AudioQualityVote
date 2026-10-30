@@ -27,13 +27,14 @@ staleness itself: bring the build to the current latest stable Gradle.
 
 ## Verified current state
 
-- Five Gradle files (root + db/server/shared/ui/war); each sets
+- Six `build.gradle` files (root, plus db/server/shared/ui/war); each sets
   `compileJava.options.release = 11`, `java.toolchain.languageVersion = 11`,
   `java.toolchain.vendor = JvmVendorSpec.ADOPTOPENJDK`. The war modules produce
   `AudioQualityVote.war` (`war { archiveName }`).
 - Dev environment JDKs: OpenJDK 21 and 25 in `/usr/lib/jvm` (no JDK 11 in that
   location; `compileJava.options.release = 11` pins the bytecode target
-  independently of the compiling JDK).
+  independently of the compiling JDK). No toolchain-resolver plugin is
+  configured in the build.
 - No CI workflows exist (`.github/workflows` absent): no CI compatibility
   surface for this change.
 - `com.github.johnrengelman.shadow` is declared in pluginManagement but applied
@@ -65,8 +66,7 @@ staleness itself: bring the build to the current latest stable Gradle.
 - R1. The Gradle wrapper SHALL pin the current latest stable Gradle release,
   and the build SHALL run through the wrapper.
 - R2. Each build plugin on which the build depends SHALL be on a release that
-  loads and functions on the wrapper's Gradle version (era-mismatched pins are
-  replaced; unused pins deleted).
+  loads and functions on the wrapper's Gradle version.
 - R3. Build repository declarations SHALL reference live repositories only;
   the dead JCenter endpoint SHALL be removed.
 - R4. The upgrade SHALL preserve build outputs: the Java 11 bytecode target
@@ -93,11 +93,15 @@ staleness itself: bring the build to the current latest stable Gradle.
 
 ## Impact
 
-- Touches: wrapper files, `settings.gradle`, all five build files.
+- Touches: wrapper files, `settings.gradle`, all six `build.gradle` files.
 - Developer environments: the wrapper self-provisions the new distribution;
-  builds use the local JDKs (21/25 installed here) for the Gradle daemon and
-  compilation toolchain resolution — a locally discoverable JDK and the
-  release-11 target are proven by SC-2/SC-4 on this machine.
+  the Gradle daemon runs on a locally installed JDK (21/25 here). Compilation
+  toolchain resolution is an open point this change must resolve: the current
+  pin (`languageVersion 11` + `ADOPTOPENJDK` vendor) has no matching JDK on
+  this machine and no resolver plugin configured, so the build needs a
+  discoverable or provisioned compilation toolchain while the release-11
+  bytecode output stays fixed; whether that point already resolves under the
+  new Gradle line, or requires the pin to change, is proven by SC-2/SC-4.
 - Risk: the era-jump of the plugin pins (gretty, wisepersist GWT plugin,
   eclipse.apt, freefair lombok) is the uncertain part; mitigated by SC-2
   evidence. No external consumers (no CI, no published build artifacts).
