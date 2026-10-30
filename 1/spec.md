@@ -30,8 +30,12 @@ staleness itself: bring the build to the current latest stable Gradle.
 
 - Six `build.gradle` files (root, plus db/server/shared/ui/war); each sets
   `compileJava.options.release = 11`, `java.toolchain.languageVersion = 11`,
-  `java.toolchain.vendor = JvmVendorSpec.ADOPTOPENJDK`. The war modules produce
-  `AudioQualityVote.war` (`war { archiveName }`).
+  `java.toolchain.vendor = JvmVendorSpec.ADOPTOPENJDK`. Three modules apply
+  `war`; `audio-quality-vote-server` and `audio-quality-vote-war` name their
+  output `AudioQualityVote.war` (`war { archiveName }`), while `audio-quality-vote-ui`
+  sets no archive name (its war keeps the default project-based name and is
+  consumed as a gretty overlay by the war module — `overlay ':audio-quality-vote-ui'`
+  in its gretty block).
 - Dev environment JDKs: OpenJDK 21 and 25 in `/usr/lib/jvm` (no JDK 11 in that
   location; `compileJava.options.release = 11` pins the bytecode target
   independently of the compiling JDK). No toolchain-resolver plugin is
@@ -74,8 +78,9 @@ staleness itself: bring the build to the current latest stable Gradle.
 - R3. Build repository declarations SHALL reference live repositories only;
   the dead JCenter endpoint SHALL be removed.
 - R4. The upgrade SHALL preserve build outputs: the Java 11 bytecode target
-  (`compileJava.options.release = 11`) and the produced war artifact
-  (`AudioQualityVote.war`) are unchanged.
+  (`compileJava.options.release = 11`) and the produced war artifacts are
+  unchanged — `AudioQualityVote.war` from the server and war modules, and the
+  ui module's default-named war overlay as it stands today.
 
 ## Success criteria
 
