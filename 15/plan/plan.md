@@ -38,13 +38,17 @@ The produced war path is `audio-quality-vote-war/build/libs/AudioQualityVote.war
 - **Deliverable:** the host page `audio-quality-vote-ui/src/main/webapp/index.html`
   carries `<meta name="aqv-version" content="${aqvVersion}">` and
   `<meta name="aqv-build-date" content="${aqvBuildDate}">` (head section); the ui
-  module's `war` task expands the tokens at packaging time — in `audio-quality-vote-ui/build.gradle`'s
-  existing `war { … }` configuration add
-  `filesMatching('index.html') { expand 'aqvVersion': project.version.toString(),
-  'aqvBuildDate': java.time.LocalDate.now(java.time.ZoneOffset.UTC).toString() }`
-  (evaluated at task execution — the values are that build's). The final
-  `AudioQualityVote.war` receives the already-expanded file through the gretty overlay
-  (war module overlays `:audio-quality-vote-ui`), so no second stamping is needed.
+  module's build stamping expands the tokens **at both assembly paths the artifact
+  flows through** — in `audio-quality-vote-ui/build.gradle`'s existing `war { … }`
+  configuration (the packaging path the deployed `AudioQualityVote.war` and
+  `deploy-dict.sh` use) and on gretty's `prepareInplaceWebAppFolder` task (the inplace
+  webapp `appStart` serves — the SOP local-run stack is inplace, gretty builds
+  `build/inplaceWebapp` from webapp sources independent of the war). Both use a
+  per-line copy `filter` (`line.replace('${aqvVersion}', project.version.toString())
+  .replace('${aqvBuildDate}', <UTC date>)`, evaluated at task execution — the values
+  are that build's); Gradle's whole-file `expand` (SimpleTemplateEngine) mangles this
+  file's `document.write` content and is not usable here (documented engine behavior,
+  confirmed on this artifact).
 - **RED:** after the P-1 GREEN, `./gradlew :audio-quality-vote-war:clean build`, then
   `unzip -p audio-quality-vote-war/build/libs/AudioQualityVote.war index.html | grep -c "aqv-version"`
   = 0 — the criterion fails today (no metadata in the artifact).
@@ -117,6 +121,14 @@ The produced war path is `audio-quality-vote-war/build/libs/AudioQualityVote.war
 - **Instrument:** read SOP.md: the regime section states one-bump-per-PR, the three
   level definitions, and the source-of-truth location; no superseded text remains.
 - **Dependencies:** after P-1 (documents the landed declaration mechanism).
+- **Mid-cycle extension (developer directive, verbatim "this needs to SOP added"):**
+  SOP.md additionally gains a "Browser verification (playwright CLI)" section — the
+  vendored CLI invocation (PATH-prefixed, `--browser chromium`), the persistent profile
+  (`ud-bl-persist`; custom `--profile` forks an orphan profile), headed windows for
+  developer login hops, DB-backed app sessions surviving server restarts, and
+  backgrounded `appStart` with context-URL polling. This content traces to that
+  directive (verified browser-facts of this session), extends P-5's SOP deliverable,
+  and lands with the P-5 cycle on the same branch; it is not part of SC-6.
 
 ## Dependencies
 
@@ -170,8 +182,10 @@ needs one developer-completed login hop.
 - Version bump across a merge sequence: each PR's diff is measured against the trunk
   commit it landed on (SC-2 instrument's base), so merges landing after other bumps
   remain decidable.
-- The `filesMatching` expand runs on the ui module's war only; the final war receives
-  the expanded file once (no double-substitution — the overlay copies, not re-filters).
+- The stamping `filter` runs on the ui module's war packaging and inplace assembly
+  independently — each is a separate copy; the final war receives the ui war's
+  already-stamped file once (the overlay copies, not re-filters), so no double
+  substitution can occur.
 
 ## Not Included
 
