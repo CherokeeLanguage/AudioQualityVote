@@ -96,10 +96,12 @@ class-file major 55 cannot load on JDK 8. The target correction is in scope.
   loads and functions on the wrapper's Gradle version.
 - R3. Build repository declarations SHALL reference live repositories only;
   the dead JCenter endpoint SHALL be removed.
-- R4. The upgrade SHALL preserve build outputs: the Java 11 bytecode target
-  (`compileJava.options.release = 11`) and the produced war artifacts are
-  unchanged — `AudioQualityVote.war` from the server and war modules, and the
-  ui module's default-named war overlay as it stands today.
+- R4. The upgrade SHALL land the build on the project's JDK 8 floor and
+  preserve build outputs: compiled bytecode runs on a JDK 8 runtime
+  (`compileJava.options.release = 8` replacing the inconsistent pre-existing
+  `release = 11` flags), and the produced war artifacts are unchanged —
+  `AudioQualityVote.war` from the server and war modules; the ui module's
+  default-named war overlay as it stands today.
 
 ## Success criteria
 
@@ -108,7 +110,7 @@ class-file major 55 cannot load on JDK 8. The target correction is in scope.
 | SC-1 | The wrapper pins the current latest stable Gradle release (9.8.2 at filing; a newer stable published before implementation supersedes it) | Structural | Read `gradle/wrapper/gradle-wrapper.properties` `distributionUrl`; the pinned version equals the head entry of the stable releases list at https://gradle.org/releases/ at check time |
 | SC-2 | `./gradlew build` completes successfully under the wrapper-pinned Gradle and produces the same war artifacts as today: `AudioQualityVote.war` from the server and war modules, the ui module's default-named war overlay | Behavioral | Run `./gradlew build` (via the wrapper); capture exit code 0 and `BUILD SUCCESSFUL`; confirm in the build output the three artifact surfaces: `AudioQualityVote.war` in the war module's and the server module's build output, and the default-named war artifact in the ui module's build output |
 | SC-3 | No dead repository remains in build scripts | Structural | Grep `*.gradle` for `jcenter` → 0 matches; dependency resolution from live repositories evidenced in the SC-2 build output |
-| SC-4 | Compiled bytecode keeps the Java 11 target (unchanged behavior the upgrade puts at risk) | Structural | `javap -verbose` on a class compiled by the new build (e.g. server module) reports class-file major version 55 |
+| SC-4 | Compiled bytecode runs on the project's JDK 8 floor (today's release-11 flags cannot load on JDK 8) | Structural | `javap -verbose` on a class compiled by the new build (e.g. server module) reports class-file major version 52 |
 
 ## Out of scope
 
@@ -117,7 +119,9 @@ class-file major 55 cannot load on JDK 8. The target correction is in scope.
 - CI creation (none exists), deployment or process changes, project version
   bumps (no version operation — this is a build-toolchain change, not a
   release).
-- Raising the app's Java language level or bytecode target.
+- Any change to the app's Java language level beyond the JDK 8 bytecode-target
+  correction this spec requires (the release-11 → release-8 flag correction
+  is the only app-facing compile-target change).
 
 ## Impact
 
@@ -127,14 +131,18 @@ class-file major 55 cannot load on JDK 8. The target correction is in scope.
   toolchain resolution is an open point this change must resolve: the current
   pin (`languageVersion 11` + `ADOPTOPENJDK` vendor) has no matching JDK on
   this machine and no resolver plugin configured, so the build needs a
-  discoverable or provisioned compilation toolchain while the release-11
-  bytecode output stays fixed; whether that point already resolves under the
+  discoverable or provisioned compilation toolchain while the JDK 8 bytecode
+  output (major 52) stays fixed; whether that point already resolves under the
   new Gradle line, or requires the pin to change, is proven by SC-2/SC-4.
+- The one app-facing change this spec makes: produced classes load on the
+  project's JDK 8 deployment container (today's v55 bytecode would not) — a
+  deliberate correction, developer-stated, carried by R4/SC-4.
 - Risk: the era-jump of the plugin pins (gretty, wisepersist GWT plugin,
   eclipse.apt, freefair lombok) is the uncertain part; mitigated by SC-2
   evidence. No external consumers (no CI, no published build artifacts).
-- Traceability: the staleness facts above require R1-R3; R4 preserves the
-  app-facing behavior (bytecode target, war artifact) the change puts at risk.
+- Traceability: the staleness facts above require R1-R3; R4 restores the
+  app-facing bytecode floor (JDK 8, major 52 — developer-stated project
+  target) that the stale release-11 flags violated, plus the war artifacts.
   Every SC maps to its requirement (SC-1→R1, SC-2/SC-4→R1, R4, SC-2→R2, SC-3→R3).
 
 Byline: 🤖 Co-authored with AI: OpenCode (huggingface/zai-org/GLM-5.3-Flash)
