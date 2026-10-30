@@ -133,9 +133,15 @@ switch that identity provider to GitHub.
   scribejava-core/apis 8.3.3 pair plus `org.kohsuke:github-api:1.330` (GWT
   framework dependencies `com.google.gwt.*` are untouched).
 - Wording: login button and tabulation notice updated to GitHub wording.
-- Identity continuity (existing behavior, preserved): session uid resolution by
-  email stays; new GitHub logins insert with provider `"GitHub"`; provider-
-  `"Google"` rows untouched.
+- Identity continuity (existing behavior, preserved and made deterministic):
+  session uid resolution by email stays; new GitHub logins insert with
+  provider `"GitHub"` — the users table can then hold both provider rows for
+  one email (the insert dedupes on provider+oauth_id); provider-`"Google"`
+  rows untouched. The email-match resolution
+  (`AudioQualityVoteDao.uidByEmail`, an unordered scalar select today) is
+  made deterministic — explicit stable ordering preferring the earliest
+  matching row — so the migration cohort's continuation does not rest on
+  engine scan order.
 
 ## Requirements
 
@@ -163,8 +169,12 @@ switch that identity provider to GitHub.
 - R6. Vote attribution SHALL be unchanged for an authenticated session —
   votes attach to the session's uid as today. Identity continuation stays
   email-resolution based: a login whose verified email matches an existing
-  row resolves that row's uid. Existing provider-"Google" rows SHALL NOT be
-  modified.
+  row resolves that row's uid — deterministically (the email-match resolution
+  orders explicitly and prefers the earliest matching row; it never relies on
+  engine scan order). Existing provider-"Google" rows SHALL NOT be modified;
+  a GitHub login may then legitimately leave both provider rows sharing an
+  email (the user-insert dedupes on provider+oauth_id), which the
+  deterministic resolution absorbs.
 - R7. The server's exchange and GitHub identity fetch SHALL ride the
   established maintained libraries named in Approach — ScribeJava 8.3.3
   (GitHubApi) and org.kohsuke:github-api 1.330 — and SHALL NOT hand-roll HTTP
@@ -177,9 +187,10 @@ switch that identity provider to GitHub.
 | SC-1 | A user completing login through GitHub on a locally run deployment is authenticated: a session is issued and the users table records the login with `oauth_provider='GitHub'` | Behavioral | Prerequisite: a GitHub OAuth app exists with its dev credentials configured and its callback matching the local deployment. Run the app via the wrapper (gretty/tomcat9, contextPath AudioQualityVote), drive the web flow to completion in a browser, then read the user row: provider value `"GitHub"` and issued session observed |
 | SC-2 | A vote cast under a GitHub-issued session is attributed to that user's uid (unchanged counting behavior) | Behavioral | Using the SC-1 session, perform one vote through the voting flow; verify the vote record attaches to that uid (DB read or API result) |
 | SC-3 | Failed authorization creates nothing | Behavioral | Submit an invalid or aborted authorization (bad code, state mismatch, or declined flow) to the login path; login returns failure and no user or session row is created (users table read before/after) |
-| SC-4 | No active Google OAuth surface remains in the code | Structural | Grep the repo: `accounts.google.com` in client login code, `GoogleIdToken`, `google-api-client` in build scripts, non-comment `gwt-oauth2` references, and the OAuth2 GWT `inherits` → 0 matches (GWT framework `com.google.gwt.*` references untouched) |
+| SC-4 | No active Google OAuth surface remains in the code | Structural | Grep the repo: `accounts.google.com` in client login code, `GoogleIdToken`, `google-api-client` in build scripts, non-comment `gwt-oauth2` references, the OAuth2 GWT `inherits`, and the Google login wording (`Login with Google`, `A Google login`) → 0 matches, with the login screen copy referencing GitHub (≥1 GitHub reference in the login UiBinder source); GWT framework `com.google.gwt.*` references untouched |
 | SC-5 | The client secret is confined to server-side runtime configuration | Structural | `detect-secrets` scan (repo wrapper) reports no committed secret; `client_secret`/`GITHUB_CLIENT_SECRET` appears only in server-module code reading the properties-file config; shared/ui sources contain no secret value |
 | SC-6 | The server's exchange and identity ride the named libraries — no bespoke HTTP plumbing for those steps | Structural | Server `build.gradle` declares `com.github.scribejava:scribejava-core/-apis:8.3.3` and `org.kohsuke:github-api:1.330`; grep server sources for `github.com/login/oauth` and `api.github.com` literals → 0 matches (the endpoint URLs live inside the libraries; app code calls the library APIs) |
+| SC-7 | A GitHub login whose verified email matches a pre-existing provider-"Google" row resolves that pre-existing row's uid, deterministically — same uid on repeated logins, vote history attaching through it | Behavioral | Local dev database seeded with a provider-"Google" row whose email equals the test account's GitHub verified email; run the SC-1 web flow; assert the resolved uid is the seeded row's uid; repeat the login and assert the same uid |
 
 ## Out of scope
 
@@ -197,7 +208,10 @@ switch that identity provider to GitHub.
   verified email — a returning voter with the same verified email keeps their
   uid and vote history; a different verified email resolves as a new
   identity. That is today's existing resolution behavior (uidByEmail), not
-  something this change adds; flagged here for judgment at approval.
+  something this change adds. For the migration cohort (existing
+  provider-"Google" rows), a same-email GitHub login leaves two provider rows
+  sharing an email; the deterministic earliest-row resolution (R6/SC-7) keeps
+  the pre-existing uid stable across logins.
 - Deployment: needs a GitHub OAuth app (callback URL = deployment origin) and
   the client_secret in the deployment properties file; the Google app's
   configuration becomes unused.
@@ -205,10 +219,12 @@ switch that identity provider to GitHub.
 - Risk: moderate — the login path is rewritten; SC-2/SC-3 preservation
   criteria bound the blast radius to the login path.
 - Traceability: R1-R3 implement the stated switch; R4 follows from GitHub's
-  required server-side exchange and the no-committed-secrets floor; R5/R6
-  preserve existing behavior (gap coverage); R7 is the developer-stated
-  library requirement ("no bespoke trash": named pair on the jdk8 floor).
-  Every SC maps to its requirement (SC-1→R1,R2; SC-2→R6; SC-3→R5; SC-4→R3;
-  SC-5→R4; SC-6→R7).
+  required server-side exchange and the no-committed-secrets floor; R5
+  preserves the failure path (gap coverage); R6 preserves the stated purpose
+  of login — "correct tabulation of votes" — with the mixed-provider cohort's
+  continuation made deterministic; R7 is the developer-stated library
+  requirement ("no bespoke trash": named pair on the jdk8 floor). Every SC
+  maps to its requirement (SC-1→R1,R2; SC-2→R6; SC-3→R5; SC-4→R3; SC-5→R4;
+  SC-6→R7; SC-7→R6).
 
 Byline: 🤖 Co-authored with AI: OpenCode (huggingface/zai-org/GLM-5.3-Flash)
