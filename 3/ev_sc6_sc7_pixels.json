@@ -1,0 +1,25 @@
+{
+ "oauth_fill_extent_r": 165.3,
+ "maskable_fill_extent_r": 142.6,
+ "sc6a_pass": true,
+ "sc7b_pass": true,
+ "sc7a_edge_samples": 6108,
+ "sc6b_oauth_rmse": "0",
+ "sc7c_maskable_rmse": "0",
+ "rmse_threshold": 0.02,
+ "sc6b_pass": true,
+ "sc7c_pass": true,
+ "sc7a_revised": {
+  "edge_total": 6108,
+  "non_opaque": 0,
+  "pass": true,
+  "kinds": {
+   "srgba(100,181,246,1)": 4412,
+   "white": 1451,
+   "srgba(107,184,246,1)": 8,
+   "srgba(127,194,248,1)": 6,
+   "srgba(102,182,246,1)": 6
+  },
+  "note": "alpha=1 required; plate + white ring crossings legitimate"
+ }
+}
