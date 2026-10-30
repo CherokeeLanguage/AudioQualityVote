@@ -1,1 +1,10 @@
-comments: []
+comments:
+- type: internal
+  body: 'Triage verdict: verified-resolved. Resolved by c06e3fa build(#1) (Gradle
+    9.8.2 upgrade; gretty 3.0.4 -> 3.1.9 in the same settings block), ~30 min after
+    filing. Evidence against this issue own criteria, run 2026-10-30 via ./gradlew:
+    R-1 ./gradlew projects BUILD SUCCESSFUL (root + 5 subprojects configure); R-2
+    ./gradlew test BUILD SUCCESSFUL, UidByEmailTest tests=2 failures=0 errors=0 (other
+    modules NO-SOURCE). Independent confirmation: merged PRs #13/#16/#17 built through
+    the same chain.'
+  timestamp: '2026-10-30T20:21:03+00:00'
