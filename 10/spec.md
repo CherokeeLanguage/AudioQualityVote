@@ -24,7 +24,7 @@ to `vhost.cherokeedictionary.net` (the context that host actually serves — ver
 artifact) are removed; no CED war has ever existed on the new host, and no other repo surface
 references either (verified by grep at spec time).
 
-Each script pins its own working directory before any build/upload step:
+The script pins its own working directory before any build/upload step:
 `cd "$(dirname "$(readlink -f "$0")")"` immediately after the `set -o pipefail` guard —
 readlink resolves invocation via symlinks/relative path, so the script behaves identically
 invoked from anywhere. Build, scp, and ssh steps are unchanged (`#8` shape intact).
