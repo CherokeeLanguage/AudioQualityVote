@@ -68,15 +68,27 @@ behavior change and it converts a silently-broken session into a 5xx.
   change required.
 - R4. The `uid==0` silent continuation is removed: that branch throws 500 — a failed row
   resolution can no longer issue sessions against a nonexistent uid.
+- R5. `AudioQualityVoteDao.uidByEmail` SHALL NOT explode on a first-ever email (JDBI
+  primitive-long "statement returned no results" `IllegalStateException`, observed live on
+  the deployed host): the query always returns a value — `coalesce(min(uid),0)` semantics —
+  so an unknown email resolves to `0` and the documented insert path runs. The `order by
+  uid asc limit 1` selection (oldest matching row) is preserved by `min(uid)`.
+- R6. The project SOP (`SOP.md`, repo root, tracked) SHALL mandate the project-root
+  `./gradlew` wrapper as the ONLY gradle to use (system `gradle` prohibited), and SHALL
+  state the default local run mode as `./gradlew :audio-quality-vote-war:appStart`
+  (detached, `appStop` to halt), with `appRun` named only as the foreground variant.
 
 ## Success criteria
 
 | ID | Criterion | Class | Verification instrument |
 |----|-----------|-------|-------------------------|
-| SC-1 | Invalid-code login attempts surface as a server error with a diagnostic, not a 204 | Behavioral | Local stack (mariadb container + gretty appRun as in #2 live tests): POST `/api/user/login` with header code `probe-invalid-code` → HTTP 401 (not 204), server output shows `AQV login` exchange-failure line, browser-side contract exercised by the live #2 flow shape; no code/secret in the line |
+| SC-1 | Invalid-code login attempts surface as a server error with a diagnostic, not a 204 | Behavioral | Local stack (mariadb container + gretty as in #2 live tests): POST `/api/user/login` with header code `probe-invalid-code` → HTTP 401 (not 204), server output shows `AQV login` exchange-failure line; no code/secret in the line |
 | SC-2 | The null-masking paths are gone: every branch maps per the table | Behavioral | Same run: POST with empty code → 400; (structural for the rest) |
 | SC-3 | No secrets/codes/emails leak into errors or logs by construction | Structural | Diff read: no `client_secret`, `code` value, token, or email value in any thrown message or `System.err` string; all raw `getMessage()` in the flow routed through the bounded helper; SC-1's runtime line double-checks |
 | SC-4 | `uid==0` can no longer produce a session | Structural | Diff read: the post-insert re-query result is checked; 0 throws 500; no session issuance (`newSessionId`) precedes the check |
+| SC-5 | First-ever-email resolution returns 0 instead of throwing | Behavioral | Executed test against the local mariadb (db-module test, `gradle :audio-quality-vote-db:test`): call `uidByEmail` with an unknown email → returns 0 (RED pre-fix: JDBI `IllegalStateException` "statement returned no results" — the exact live-stack exception); call with a known seed row → returns that row's uid; oldest-row tie preserved with two rows on one email |
+
+| SC-6 | The SOP mandates wrapper-only gradle and `appStart` as default | Structural | Read of `SOP.md`: the `./gradlew` wrapper is mandated as the only gradle (system gradle prohibited) and `appStart` is the stated default for local server runs (`appStop` as halt counterpart); `appRun` appears only as the named foreground variant; grep finds no SOP instruction defaulting to `appRun` or endorsing system `gradle` |
 
 ## Out of scope
 
@@ -85,9 +97,13 @@ behavior change and it converts a silently-broken session into a 5xx.
 - broader error-surface campaigns in unrelated endpoints (filed separately if found).
 
 ## Traceability
-R1/R2 ← "fix the logging" + the policy correction (surfacing, not masking, is the fix);
+R1/R2 ← "fix the logging" + the policy correction (surfacing, not masking);
 R3 ← gap coverage (success contract unchanged); R4 ← the policy correction applied to the
-worst masked branch. SC-1→R1 (exchange branch live); SC-2→R1 (branch mapping);
-SC-3→R2; SC-4→R4.
+worst masked branch; R5 ← the live-stack `IllegalStateException` the developer pasted (the
+insert path's first-ever-email crash, previously masked by the 204 contract that same
+correction condemns); R6 ← "add an SC to update this project's SOP to use appStart and not
+appRun by default".
+SC-1→R1 (exchange branch live); SC-2→R1 (branch mapping); SC-3→R2; SC-4→R4; SC-5→R5;
+SC-6→R6.
 
 Byline: 🤖 Co-authored with AI: OpenCode (huggingface/zai-org/GLM-5.3-Flash)
