@@ -113,6 +113,12 @@ public class AppPresenter {
 			if (storage != null) {
 				storage.removeItem(OAUTH_STATE_KEY);
 			}
+			// URL hygiene: the one-time code must not linger in the address
+			// bar, history, or any shared URL after the state match consumes
+			// this return. One replace-state, before the RPC, serves both the
+			// success and failure outcomes; the state-mismatch path (below)
+			// deliberately keeps the URL for troubleshooting.
+			DomGlobal.window.history.replaceState(null, null, cleanUrl());
 			loading.loading(true);
 			api.login(code).thenAccept((u) -> {
 				loading.loading(false);
@@ -135,6 +141,16 @@ public class AppPresenter {
 		// lands here and creates nothing.
 		DomGlobal.console.log("state mismatch - login aborted");
 		displayLoginView();
+	}
+
+	/**
+	 * The host-page base URL with no query parameters — the clean callback
+	 * address the browser lands on after OAuth code/state/iss params are
+	 * scrubbed.
+	 */
+	private static String cleanUrl() {
+		String base = GWT.getHostPageBaseURL();
+		return base.endsWith("/") ? base : base + "/";
 	}
 
 	private void displayLoginView() {
