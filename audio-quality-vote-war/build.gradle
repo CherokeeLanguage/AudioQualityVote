@@ -16,7 +16,7 @@ repositories {
 gretty {
 	httpPort = 8080
 	servletContainer = 'tomcat9'
-	jvmArgs = ['-Dfile.encoding=UTF-8', '-Xmx512M', '-Ddebug=true' ]
+	jvmArgs = ['-Dfile.encoding=UTF-8', '-Xmx512M' ]
 	overlay ':audio-quality-vote-server'
 	overlay ':audio-quality-vote-ui'
 	extraResourceBase '../audio-quality-vote-ui/build/gwt/war'
