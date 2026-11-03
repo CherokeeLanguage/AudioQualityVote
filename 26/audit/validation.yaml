@@ -19,3 +19,13 @@ implementation-evidence:
   SC-4: "VERSION.txt = 1.1.0; product jars record gretty 3.1.9 + tomcat-embed 9.0.118; artifacts/VERSION.txt"
   SC-5: "git diff main — exactly two build-file edits (war jvmArgs, root version line); no other gretty settings, sources, or dependencies touched"
   SC-6: "dev-run leg — daemon-free appStart with production jvmArgs, shell 200 twice, clean appStop; artifacts/appStart-devrun.log"
+implementation-verify-round-1:
+  date: 2026-11-03
+  result: FAIL
+  findings:
+    - "Export not reproducible from pristine checkout (SC-1): clean-clone single-invocation buildProduct lacks extraResources/ and server.json extraResourceBases — gretty 3.1.9 captures extraResourceBase at configuration time (verified by two-run experiment in the clean clone)."
+    - "Missing executed HTTP evidence (SC-3, SC-6): captured 200 bodies/row-count capture absent from artifacts; summary cited a log not containing them."
+  remediation:
+    - "Spec R-1/SC-1 revised in place: canonical export is the two-step invocation (gwtCompile then buildProduct), instrument requires pristine-checkout reproduction; remote body synced (2026-11-03T16:58:09Z). Plan Item 3 revised to match. Zero build-file edits — SC-5 scope unchanged."
+    - "SC-6 re-executed with persisted capture (dev-shell.html, 200, 1039 bytes); SC-3 re-executed from a fresh-clone two-step product (container-shell.html 200; container-csv-preseed.csv RED-state header-only; container-csv-seeded.csv 200 with 3 data rows == aids 1,2,3; aqv26-prod2-container.log with clean ingest-scan lines, zero exceptions, and the G-1 shutdown record: SIGTERM grace exhausted at 10s -> SIGKILL exit=137)."
+  cold-reproducibility: "fresh clone aqv26-clean2: gwtCompile (13 executed) then buildProduct — full tree incl. extraResources/gwt cache.js files, webapps/AudioQualityVote.war, VERSION.txt 1.1.0; logs aqv26-clean2-*.log"

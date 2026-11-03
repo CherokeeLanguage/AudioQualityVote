@@ -34,9 +34,16 @@ mandate, declared inside SC-5 as the confinement's stated exception (spec revise
 
 ## Item 3 — The export run and product-tree verification (R-1, R-3) → SC-1, SC-2, SC-4
 
-- **Deliverable:** run `./gradlew :audio-quality-vote-war:buildProduct` (the repo
-  wrapper; gretty's configureless export on the war module inherits its gretty block) and
-  verify the product tree: start/run/stop/restart scripts, `conf/server.json`
+- **Deliverable:** run the R-1 two-step export invocation (revised in place 2026-11-03 on
+  the verify round's finding 1 — gretty 3.1.9 captures `extraResourceBase` at build
+  configuration time, so a cold single `buildProduct` silently drops `extraResources/` and
+  `server.json`'s `extraResourceBases`; the GWT-compile first step makes the export
+  reproducible from a pristine checkout; zero build-file edits):
+  `./gradlew :audio-quality-vote-ui:gwtCompile` then
+  `./gradlew :audio-quality-vote-war:buildProduct` (the repo wrapper; gretty's
+  configureless export on the war module inherits its gretty block) — from a pristine
+  shallow checkout — and verify the product tree: start/run/stop/restart scripts,
+  `conf/server.json`
   (`contextPath == "AudioQualityVote"`, `httpPort == 8080`, `jvmArgs` = the Item 1
   production set, no `-Ddebug=true`), `runner/`, `starter/`, `servletContainer/`
   (tomcat-embed 9.0.118 jars), `webapps/AudioQualityVote.war`, `extraResources/`
@@ -44,16 +51,19 @@ mandate, declared inside SC-5 as the confinement's stated exception (spec revise
   the gretty version (3.1.9) and the packaged embedded-Tomcat version (9.0.118) — R-4's
   provenance inputs (the plugin pin in `settings.gradle` and the exported container jars
   are the recorded evidence).
-- **RED:** `buildProduct` has never been run in this repository (spec's verified fact:
-  zero `buildProduct` references repo-wide; no product tree exists) — the tree is absent.
+- **RED:** the export from a pristine checkout is not reproducible (verify finding 1: the
+  clean-clone single-invocation export lacks `extraResources/` and `server.json`'s
+  `extraResourceBases`); the tree was absent before the change.
 - **GREEN:** no repository edit beyond Items 1–2 is expected; the export is a build
-  action. If the Gradle 9.8.2 × gretty 3.1.9 export combination fails (spec O-1), that is
+  action whose canonical invocation is the revised R-1 two-step. If the Gradle 9.8.2 ×
+  gretty 3.1.9 export combination fails (spec O-1), that is
   a verified failure of the sanctioned wrapper invocation — report-with-evidence-and-halt,
   never a substitute toolchain.
-- **Instrument:** captured `./gradlew :audio-quality-vote-war:buildProduct` output +
-  scripted parse of the product tree: the named entries exist; `conf/server.json` parses
-  with the stated values; `servletContainer/` contains tomcat-embed jars of version
-  9.0.118; `VERSION.txt` equals `1.1.0`.
+- **Instrument:** captured two-step export output from the pristine checkout + scripted
+  parse of the product tree: the named entries exist (including `extraResources/`);
+  `conf/server.json` parses with the stated values including `extraResourceBases`;
+  `servletContainer/` contains tomcat-embed jars of version 9.0.118; `VERSION.txt` equals
+  `1.1.0`.
 
 ## Item 4 — Behavioral verification: the exported product serves, and the container-shaped shutdown is observed (R-1, R-2, R-3) → SC-3, SC-6
 

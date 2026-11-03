@@ -54,8 +54,15 @@ container runtime + the war) instead of hand-assembling a war onto a stock Tomca
 ## Required end state
 
 - **R-1 — The production artifact is the gretty product export:** invoked through the
-  repository's own wrapper as `./gradlew :audio-quality-vote-war:buildProduct`, producing the
-  deployable product tree for the war webapp alone.
+  repository's own wrapper as
+  `./gradlew :audio-quality-vote-ui:gwtCompile && ./gradlew :audio-quality-vote-war:buildProduct`
+  — two wrapper invocations in order, producing the deployable product tree for the war
+  webapp alone. (Revised 2026-11-03 on implementation discovery: gretty 3.1.9 captures the
+  webapp's `extraResourceBase` at build *configuration* time, so a cold single invocation
+  — the GWT output directory not yet existing — silently exports a product without
+  `extraResources/` and without `server.json`'s `extraResourceBases`; a second invocation
+  in the same tree includes both. The GWT-compile first step makes the export reproducible
+  from a pristine checkout; no build-file change is needed.)
 - **R-2 — Production JVM args:** the war module's `gretty { jvmArgs }` becomes the production
   set — `-Xmx512M` (the stack's container posture) and `-Dfile.encoding=UTF-8`; the dev-time
   `-Ddebug=true` is removed. Dev `appStart` keeps working with the production set.
@@ -76,7 +83,7 @@ container runtime + the war) instead of hand-assembling a war onto a stock Tomca
 
 | ID | Criterion | Class | Instrument |
 |---|---|---|---|
-| SC-1 | The wrapper-invoked export produces the product tree | structural | run `./gradlew :audio-quality-vote-war:buildProduct` (the repo wrapper; captured output); parse `build/output/`: start/run/stop/restart scripts, `conf/server.json`, `runner/`, `starter/`, `servletContainer/` (tomcat-embed 9.0.118 jars), `webapps/AudioQualityVote.war`, `extraResources/` (carrying the GWT build output — the client delivery the product serves via `server.json`'s `extraResourceBases`), `VERSION.txt` |
+| SC-1 | The wrapper-invoked export produces the product tree | structural | run the R-1 two-step invocation (`./gradlew :audio-quality-vote-ui:gwtCompile` then `./gradlew :audio-quality-vote-war:buildProduct` — the repo wrapper; captured output) **from a pristine shallow checkout**, so the reproducibility the revision records is itself verified; parse `build/output/`: start/run/stop/restart scripts, `conf/server.json`, `runner/`, `starter/`, `servletContainer/` (tomcat-embed 9.0.118 jars), `webapps/AudioQualityVote.war`, `extraResources/` (carrying the GWT build output — the client delivery the product serves via `server.json`'s `extraResourceBases`), `VERSION.txt` |
 | SC-2 | The baked server config is the production shape | structural | parse `conf/server.json`: `contextPath == "AudioQualityVote"`, `httpPort == 8080`, `jvmArgs` carries `-Xmx512M` and `-Dfile.encoding=UTF-8` and carries no `-Ddebug=true` |
 | SC-3 | The exported product runs and serves, and its container-shaped shutdown behavior is observed | behavioral | (after #19/#25 land — the composition this smoke verifies) run the product **containerized** (a throwaway container wrapping the product tree) with `start.sh` as the entry command, against a throwaway MariaDB **seeded to match the CSV's rendering semantics** — the CSV renders one row per **distinct aid carrying at least one non-zero vote** (entries grouped by aid; zero-valued entries render nothing), and each rendered row reads the aid's `_audio` row, so the seed is: `_audio` rows for the voted aids **plus** non-zero vote values for them (a votes-only seed makes the endpoint error, not 200); with the `DB_*` environment (per #19) and the application env keys (per #25), properties file absent: `GET /AudioQualityVote/` → 200 (GWT shell); `GET /AudioQualityVote/api/audio/votes/list/AudioQualityVotes.csv` → 200 whose data-row count equals the number of distinct seeded voted aids; the log carries the clean ingest-scan lines and no config errors; **then stop the container (`docker stop`-equivalent SIGTERM) and record the shutdown behavior** (clean exit / hang / kill — G-1's resolution) in the captured log |
 | SC-4 | Provenance recorded | structural | `VERSION.txt` carries the project version; the build log/records state gretty 3.1.9 and embedded Tomcat 9.0.118 matching the pinned plugin line |
