@@ -1,5 +1,18 @@
 #!/bin/bash
 
+# Deploy AudioQualityVote to the serving stack's Docker host
+# (vhost-58.cherokeedictionary.net). The application runs as a container on
+# the stack's host-local backend network; the compose service delivers the
+# DB_* environment keys and the secret files by path (stack convention — no
+# configuration values ship from this repository).
+#
+# Sequencing note: the container image packages the gretty application-export
+# product (AudioQualityVote#26's deliverable); the compose service itself is
+# devops#13's deliverable. Until #26's export lands, this script's build step
+# produces the war artifact and its compose service consumes the packaged
+# image — the end-to-end run is verified by devops#13's deployment
+# composition, not here.
+
 set -e
 set -o pipefail
 
@@ -7,22 +20,20 @@ cd "$(dirname "$(readlink -f "$0")")"
 
 trap "echo ERROR" ERR
 
-SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
-PROD_PROPERTIES="$SCRIPT_DIR/../AudioQualityVote-prod.properties"
-if [ ! -r "$PROD_PROPERTIES" ]; then
-	echo "ERROR: $PROD_PROPERTIES not found or not readable"
-	exit 1
-fi
+STACK_HOST="mconrad@vhost-58.cherokeedictionary.net"
+STACK_DIR="/srv/stack/audio-quality-vote"
+SERVICE="audio-quality-vote"
 
-(cd "$SCRIPT_DIR/.." && ./gradlew :audio-quality-vote-war:clean :audio-quality-vote-war:build :audio-quality-vote-war:war)
+# build the deployable product through the project's own wrapper
+(cd .. && ./gradlew :audio-quality-vote-war:clean :audio-quality-vote-war:build :audio-quality-vote-war:war)
 
-# deployment configuration: scp to temp name, remote rename into place
-# BEFORE the war rename so a fresh context init finds it
-scp "$PROD_PROPERTIES" mconrad@vhost.cherokeedictionary.net:/opt/tomcat/webapps/AudioQualityVote.properties.tmp
+# ship the built product into the stack's build context (paths only — no
+# configuration values ride this script)
+ssh "$STACK_HOST" "mkdir -p $STACK_DIR/build"
+scp build/libs/AudioQualityVote.war "$STACK_HOST:$STACK_DIR/build/AudioQualityVote.war"
 
-ssh mconrad@vhost.cherokeedictionary.net 'cd /opt/tomcat/webapps && mv -v AudioQualityVote.properties.tmp AudioQualityVote.properties'
+# (re)build and (re)start the application container on the serving stack;
+# the compose service carries the DB_* env/secret delivery
+ssh "$STACK_HOST" "cd $STACK_DIR && docker compose build $SERVICE && docker compose up -d $SERVICE"
 
-scp build/libs/AudioQualityVote.war mconrad@vhost.cherokeedictionary.net:/opt/tomcat/webapps/AudioQualityVote.tmp
-
-ssh mconrad@vhost.cherokeedictionary.net 'cd /opt/tomcat/webapps && mv -v AudioQualityVote.tmp AudioQualityVote.war'
-
+ssh "$STACK_HOST" "docker compose -f $STACK_DIR/docker-compose.yml ps $SERVICE"

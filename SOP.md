@@ -71,15 +71,17 @@ the initial version (0.1.0, AudioQualityVote#15) instead of bumping.
 ## Deployment
 
 `audio-quality-vote-war/deploy-dict.sh` — the repo's single deploy script — may be
-invoked from anywhere (it pins its own directory); it builds with the project-root
-wrapper (`./gradlew :audio-quality-vote-war:clean build war` run from the repo root) and
-ssh-copies the operator-maintained repo-root `AudioQualityVote-prod.properties` to
-`/opt/tomcat/webapps/AudioQualityVote.properties.tmp`, remote-renames it to
-`AudioQualityVote.properties`, then scp's the war as `AudioQualityVote.tmp` and remote
-renames it over `AudioQualityVote.war` (the atomic publish). Target:
-`mconrad@vhost.cherokeedictionary.net`, whose `/opt/tomcat` is a symlink to
-`apache-tomcat-9.0.7` (the symlinked webapps path is the deployment target). A properties
-template is tracked at `audio-quality-vote-war/AudioQualityVote.properties.template`.
+invoked from anywhere (it pins its own directory). It deploys the containerized
+application to the serving stack's Docker host, `vhost-58.cherokeedictionary.net`:
+it builds with the project-root wrapper, ships the built product into the stack's
+build context (`/srv/stack/audio-quality-vote/build`), and rebuilds/restarts the
+stack's `audio-quality-vote` compose service. The container image packages the
+gretty application-export product (AudioQualityVote#26's deliverable); the compose
+service itself is devops#13's deliverable. No properties file ships and no
+configuration values ride the script — the stack's compose service delivers the
+`DB_*` environment keys and secret files by path (key names and paths only). The
+legacy flow (properties file + war scp to `vhost.cherokeedictionary.net`'s Tomcat)
+is superseded.
 
 ## Failure policy (from the developer, mandatory)
 

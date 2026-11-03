@@ -29,3 +29,6 @@ AudioQualityVote-db.properties
 # operator/deployment properties (hold credentials; maintain locally, never commit)
 AudioQualityVote.properties
 AudioQualityVote-prod.properties
+
+# local development environment (operator-maintained; never commit)
+.env

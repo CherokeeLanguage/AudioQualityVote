@@ -14,7 +14,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -52,7 +51,7 @@ public interface AudioQualityVoteDao extends SqlObject {
 			if (State.dao!=null) {
 				return State.dao;
 			}
-			State.loadPropertiesFile();
+			State.loadConfig();
 			
 			final HikariConfig config = new HikariConfig();
 			config.setIdleTimeout(5 * 60 * 1000l);
@@ -60,7 +59,9 @@ public interface AudioQualityVoteDao extends SqlObject {
 			config.setMaxLifetime(15 * 60 * 1000l); // min allowed
 			config.setMinimumIdle(0);
 			config.setInitializationFailTimeout(0);
-			config.setConnectionTimeout(0);
+			// bounded wait for a pool connection — 0 (indefinite) lets a
+			// wrong-credential or unreachable database hang requests forever
+			config.setConnectionTimeout(10_000l);
 			config.setDriverClassName("org.mariadb.jdbc.Driver");
 			config.setJdbcUrl(State.jdbcUrl);
 			config.setUsername(State.user);
@@ -342,25 +343,78 @@ public interface AudioQualityVoteDao extends SqlObject {
 		protected static HikariDataSource ds;
 		protected static AudioQualityVoteDao dao;
 		protected static String jdbcUrl;
-		protected static Properties properties;
 		protected static String user;
 		protected static String password;
 
-		protected static void loadPropertiesFile() {
-			if (properties != null) {
-				return;
+		/**
+		 * Resolves the database connection configuration from the process
+		 * environment. Required keys: DB_HOST, DB_PORT, DB_NAME, DB_USER, and
+		 * the password through DB_PASSWORD_FILE (path to an operator-held
+		 * secret file — the production form) or DB_PASSWORD (direct form —
+		 * local development only); the two password forms are mutually
+		 * exclusive. A missing or conflicting key throws the configuration
+		 * error — no implicit defaults, no silent fallback.
+		 */
+		protected static void loadConfig() {
+			resolveConfig(System.getenv());
+		}
+
+		/**
+		 * The resolution seam: env-driven configuration read from the given
+		 * map so tests exercise the same path the application runs.
+		 */
+		protected static void resolveConfig(Map<String, String> env) {
+			String host = required(env, "DB_HOST");
+			String port = required(env, "DB_PORT");
+			String name = required(env, "DB_NAME");
+			user = required(env, "DB_USER");
+			String passwordFile = env.get("DB_PASSWORD_FILE");
+			String passwordDirect = env.get("DB_PASSWORD");
+			if (passwordFile != null && passwordDirect != null) {
+				throw new IllegalStateException(
+						"Both DB_PASSWORD and DB_PASSWORD_FILE are set (but are exclusive)");
 			}
-			properties = new Properties();
-			File file = AppPathConfig.PROPERTIES_FILE;
-			try (FileInputStream in = new FileInputStream(file.getAbsoluteFile())) {
-				properties.load(in);
+			if (passwordFile == null && passwordDirect == null) {
+				throw new IllegalStateException("Neither DB_PASSWORD nor DB_PASSWORD_FILE is set");
+			}
+			if (passwordFile != null) {
+				password = readSecretFile(passwordFile);
+			} else {
+				password = passwordDirect;
+			}
+			jdbcUrl = "jdbc:mariadb://" + host + ":" + port + "/" + name + "?allowMultiQueries=true";
+		}
+
+		private static String required(Map<String, String> env, String key) {
+			String value = env.get(key);
+			if (value == null || value.trim().isEmpty()) {
+				throw new IllegalStateException("Required environment variable " + key + " is not set");
+			}
+			return value;
+		}
+
+		/**
+		 * Reads an operator-held secret file, stripping trailing newline(s)
+		 * (the Docker-secrets convention — the file holds the value and the
+		 * editor's trailing newline is not part of it).
+		 */
+		private static String readSecretFile(String path) {
+			File file = new File(path);
+			String content;
+			try {
+				content = new String(java.nio.file.Files.readAllBytes(file.toPath()), "UTF-8");
 			} catch (IOException e) {
-				properties = null;
-				throw new IllegalStateException("Can't read " + file.getAbsolutePath(), e);
+				throw new IllegalStateException("Can't read secret file " + file.getAbsolutePath(), e);
 			}
-			jdbcUrl = properties.getProperty("jdbc.url");
-			user = properties.getProperty("jdbc.username");
-			password = properties.getProperty("jdbc.password");
+			return stripTrailingNewlines(content);
+		}
+
+		private static String stripTrailingNewlines(String s) {
+			int end = s.length();
+			while (end > 0 && (s.charAt(end - 1) == '\n' || s.charAt(end - 1) == '\r')) {
+				end--;
+			}
+			return s.substring(0, end);
 		}
 	}
 

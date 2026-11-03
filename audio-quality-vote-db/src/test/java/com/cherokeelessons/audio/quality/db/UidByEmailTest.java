@@ -1,6 +1,15 @@
 package com.cherokeelessons.audio.quality.db;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeTrue;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.sqlobject.SqlObjectPlugin;
@@ -8,29 +17,25 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Statement;
-
 /**
- * Exercises <code>uidByEmail</code>'s no-results contract directly against the
- * local dev MariaDB (docker container aqv-mysql). The live deploy threw
- * "SQL method returns primitive long, but statement returned no results"
- * from this exact method on a first-ever email.
+ * Exercises <code>uidByEmail</code>'s no-results contract directly against
+ * the local dev MariaDB. Connection parameters come from the same DB_*
+ * environment keys and the same URL assembly the application uses
+ * (AudioQualityVoteDao.State) — with the keys absent the class skips rather
+ * than failing spuriously (see SOP's local-run procedure for supplying them).
  */
 public class UidByEmailTest {
 
-	private static final String URL = "jdbc:mysql://127.0.0.1:3306/audiovote";
-	private static final String USER = "audiovote";
-	private static final String PASS = "audiovote_pw";
+	private static String url;
+	private static String user;
+	private static String password;
 	private static final String TABLE = "UidByEmailTest_users";
 	private static Connection conn;
 
 	@BeforeClass
 	public static void setup() throws SQLException {
-		conn = DriverManager.getConnection(URL, USER, PASS);
+		resolveFromEnv();
+		conn = DriverManager.getConnection(url, user, password);
 		try (Statement st = conn.createStatement()) {
 			st.execute("create table if not exists " + TABLE + " ("
 					+ " uid bigint auto_increment primary key,"
@@ -39,6 +44,22 @@ public class UidByEmailTest {
 					+ " oauth_id varchar(64))");
 			st.execute("delete from " + TABLE);
 		}
+	}
+
+	/**
+	 * Resolves the DB_* environment keys through the application's own
+	 * configuration resolution; skips the class when the keys are absent.
+	 */
+	private static void resolveFromEnv() {
+		Map<String, String> env = new HashMap<>(System.getenv());
+		if (!env.keySet().containsAll(java.util.Arrays.asList("DB_HOST", "DB_PORT", "DB_NAME", "DB_USER"))
+				|| (env.get("DB_PASSWORD") == null && env.get("DB_PASSWORD_FILE") == null)) {
+			assumeTrue("DB_* environment keys not set — see SOP local-run procedure", false);
+		}
+		AudioQualityVoteDao.State.resolveConfig(env);
+		url = AudioQualityVoteDao.State.jdbcUrl;
+		user = AudioQualityVoteDao.State.user;
+		password = AudioQualityVoteDao.State.password;
 	}
 
 	@AfterClass
@@ -52,7 +73,7 @@ public class UidByEmailTest {
 	}
 
 	private AudioQualityVoteDao dao() {
-		return Jdbi.create(URL, USER, PASS).installPlugin(new SqlObjectPlugin()) //
+		return Jdbi.create(url, user, password).installPlugin(new SqlObjectPlugin()) //
 				.onDemand(AudioQualityVoteDao.class);
 	}
 
