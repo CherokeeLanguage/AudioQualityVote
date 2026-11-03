@@ -140,9 +140,10 @@ devops#13's deployment — the first production consumer of the `DB_*` interface
 `environment:` + `secrets:` deliver these keys over the backend network); #25 (composes with
 this change; its no-file boot depends on this migration); #26's smoke run (exercises the
 migrated DB path); the local development workflow; the deploy path (the legacy flow is
-superseded). **Blast radius:** the db module's configuration read (one class), the server
-module's DB-touching tests, the deploy script, the SOP's Deployment section, `.gitignore`,
-`.env.example`. No REST API changes, no schema changes, no client-side changes.
+superseded). **Blast radius:** the db module's configuration read and its DB-touching tests
+(one class each — `AudioQualityVoteDao.State`, `UidByEmailTest`; the db module holds the
+repository's only test sources), the deploy script, the SOP's Deployment section,
+`.gitignore`, `.env.example`. No REST API changes, no schema changes, no client-side changes.
 **Risks:** a re-assembled URL silently dropping `allowMultiQueries=true` would break the vote
 path at runtime — SC-3 proves the parameter through the assembled URL; charset/timezone
 behavior changing if the dropped parameters were load-bearing — the driver facts verify they
