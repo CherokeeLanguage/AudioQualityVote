@@ -26,9 +26,7 @@ public class InitServlet extends HttpServlet {
 			contextPath = StringUtils.strip(contextPath, "/");
 		}
 		System.out.println("SERVLET CONTEXT: " + contextPath);
-		AppPathConfig.findConfigFile(context.getRealPath("/"), contextPath);
-		System.out.println(context.getRealPath("/"));
-		System.out.println(AppPathConfig.PROPERTIES_FILE.getAbsolutePath());
+		AppPathConfig.setContext(contextPath);
 	}
 
 	@Override

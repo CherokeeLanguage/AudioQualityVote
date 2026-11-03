@@ -1,7 +1,6 @@
 package com.cherokeelessons.audio.quality.db;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -9,7 +8,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Properties;
 import java.util.stream.Stream;
 
 import com.cherokeelessons.audio.quality.shared.AudioData;
@@ -55,27 +53,16 @@ public class AudioQualityVoteFiles {
 	private static class State {
 		public static File getAudioFolder() {
 			if (audioFolder == null) {
-				loadPropertiesFile();
+				// Environment-only configuration (AudioQualityVote#25): the
+				// deployment guarantees AUDIO_FOLDER names an existing
+				// readable directory. A missing value keeps the historical
+				// behavior — the ingest scan fails per cycle and is
+				// swallowed but logged by its caller.
+				audioFolder = new File(System.getenv("AUDIO_FOLDER")).getAbsoluteFile();
 			}
-			return audioFolder.getAbsoluteFile();
+			return audioFolder;
 		}
 
-		private static Properties properties;
 		private static File audioFolder;
-
-		private static void loadPropertiesFile() {
-			if (properties != null) {
-				return;
-			}
-			Properties props = new Properties();
-			File file = AppPathConfig.PROPERTIES_FILE;
-			try (FileInputStream in = new FileInputStream(file.getAbsoluteFile())) {
-				props.load(in);
-			} catch (IOException e) {
-				throw new IllegalStateException("Can't read " + file.getAbsolutePath(), e);
-			}
-			properties = props;
-			audioFolder = new File(properties.getProperty("audio.folder"));
-		}
 	}
 }

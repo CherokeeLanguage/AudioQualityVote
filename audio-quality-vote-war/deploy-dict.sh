@@ -12,6 +12,12 @@
 # produces the war artifact and its compose service consumes the packaged
 # image — the end-to-end run is verified by devops#13's deployment
 # composition, not here.
+#
+# DEPRECATED (legacy host, AudioQualityVote#25): trunk no longer runs on the
+# legacy host's properties-based deployment — since the environment-only
+# configuration change, redeploying trunk to vhost.cherokeedictionary.net's
+# Tomcat is NOT SUPPORTED. This script targets the serving stack's container
+# deployment only.
 
 set -e
 set -o pipefail
