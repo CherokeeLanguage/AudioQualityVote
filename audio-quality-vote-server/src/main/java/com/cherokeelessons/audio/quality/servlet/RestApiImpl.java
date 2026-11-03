@@ -1,15 +1,16 @@
 package com.cherokeelessons.audio.quality.servlet;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.text.Normalizer;
 import java.text.Normalizer.Form;
 import java.util.Collections;
 import java.util.List;
-import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -120,9 +121,15 @@ public class RestApiImpl implements RestApi {
 	}
 
 	/**
-	 * GitHub OAuth client secret, read server-side from the deployment
-	 * properties file (key {@code github.client_secret}). Never compiled into
-	 * the client bundle and never committed.
+	 * GitHub OAuth server-side credentials, read from the process environment
+	 * (AudioQualityVote#25 — environment-only configuration). The client id
+	 * rides {@code GITHUB_CLIENT_ID} with the compiled {@code Consts.CLIENT_ID}
+	 * as the fallback — the two denote the same public-by-design OAuth
+	 * application. The client secret is never compiled into the client bundle
+	 * and never committed: production delivers it through
+	 * {@code GITHUB_CLIENT_SECRET_FILE} (path to an operator-held file); the
+	 * direct {@code GITHUB_CLIENT_SECRET} form exists for local development
+	 * only.
 	 */
 	@Override
 	public UserInfo login(String code) {
@@ -131,23 +138,13 @@ public class RestApiImpl implements RestApi {
 			throw new WebApplicationException("Login refused: missing authorization code",
 					Status.BAD_REQUEST);
 		}
-		Properties deployProperties = new Properties();
-		File file = AppPathConfig.PROPERTIES_FILE;
-		try (FileInputStream in = new FileInputStream(file.getAbsoluteFile())) {
-			deployProperties.load(in);
-		} catch (IOException e) {
-			System.err.println(
-					"AQV login properties-unreadable: " + brief(e.getMessage()));
-			throw new WebApplicationException(
-					"Login unavailable: server configuration unreadable",
-					Status.INTERNAL_SERVER_ERROR);
+		String clientId = System.getenv("GITHUB_CLIENT_ID");
+		if (clientId == null || clientId.trim().isEmpty()) {
+			clientId = Consts.CLIENT_ID;
 		}
-		// Exchange-side credentials ride deployment properties; the compiled
-		// Consts.CLIENT_ID is the client bundle's view of the same public id.
-		String clientId = deployProperties.getProperty("github.client_id", Consts.CLIENT_ID);
-		String clientSecret = deployProperties.getProperty("github.client_secret");
+		String clientSecret = resolveClientSecret();
 		if (clientSecret == null || clientSecret.isEmpty()) {
-			System.err.println("AQV login config-error: github.client_secret missing from deployment properties.");
+			System.err.println("AQV login config-error: neither GITHUB_CLIENT_SECRET_FILE nor GITHUB_CLIENT_SECRET is set.");
 			throw new WebApplicationException(
 					"Login unavailable: server configuration incomplete",
 					Status.INTERNAL_SERVER_ERROR);
@@ -238,6 +235,33 @@ public class RestApiImpl implements RestApi {
 			dao().deleteOldestSessions(AppPathConfig.TABLE_PREFIX, uid, sessionCount - 5);
 		}
 		return info;
+	}
+
+	/**
+	 * Resolves the GitHub client secret from the environment: the
+	 * {@code GITHUB_CLIENT_SECRET_FILE} secret-file form when set (the
+	 * production idiom — trailing newline(s) stripped, the Docker-secrets
+	 * convention), else the direct {@code GITHUB_CLIENT_SECRET} form (local
+	 * development only), else {@code null} — the caller's config-error path.
+	 */
+	private static String resolveClientSecret() {
+		String secretFile = System.getenv("GITHUB_CLIENT_SECRET_FILE");
+		if (secretFile != null && !secretFile.trim().isEmpty()) {
+			try {
+				byte[] bytes = Files.readAllBytes(Paths.get(secretFile.trim()));
+				String content = new String(bytes, StandardCharsets.UTF_8);
+				// strip trailing newline(s) — the Docker-secrets convention
+				int end = content.length();
+				while (end > 0 && (content.charAt(end - 1) == '\n' || content.charAt(end - 1) == '\r')) {
+					end--;
+				}
+				return content.substring(0, end);
+			} catch (IOException e) {
+				System.err.println("AQV login secret-file-unreadable: " + brief(e.getMessage()));
+				return null;
+			}
+		}
+		return System.getenv("GITHUB_CLIENT_SECRET");
 	}
 
 	/**

@@ -18,13 +18,20 @@
 
 1. MariaDB 10.11 on `127.0.0.1:3306`:
    `docker run -d --name aqv-mysql -e MYSQL_ROOT_PASSWORD=root_pw -e MYSQL_DATABASE=audiovote -e MYSQL_USER=audiovote -e MYSQL_PASSWORD=audiovote_pw -p 3306:3306 mariadb:10.11`
-2. Configuration at repo root `AudioQualityVote.properties` (git-ignored):
-   `jdbc.url=jdbc:mysql://127.0.0.1:3306/audiovote?allowMultiQueries=true&useUnicode=true&characterEncoding=utf8`,
-   `jdbc.username`, `jdbc.password`, `audio.folder=/tmp/opencode/aqv-audio`, and the
-   `github.client_id`/`github.client_secret` pair from the operator's records.
-3. `./gradlew :audio-quality-vote-war:appStart`, context at
+2. Configuration is environment-only (AudioQualityVote#25; no properties file
+   exists any longer). Copy `.env.example` to `.env` (git-ignored), fill in the
+   operator values (the full key set: `DB_*` plus `AUDIO_FOLDER`,
+   `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET_FILE`/`GITHUB_CLIENT_SECRET`), and
+   load it into the invoking shell:
+   `set -a; . ./.env; set +a`.
+3. **Gradle-daemon environment caveat (mandatory):** the Gradle daemon captures
+   its environment at start — env values changed after the daemon started do
+   **not** reach the forked webapp JVM. After changing any env value, either
+   restart the daemon (`./gradlew --stop`) or use the daemon-free invocation
+   form: `./gradlew --no-daemon :audio-quality-vote-war:appStart`.
+4. `./gradlew :audio-quality-vote-war:appStart`, context at
    `http://localhost:8080/AudioQualityVote` (Tomcat 9 via gretty).
-4. `JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64` when the default JVM is newer than
+5. `JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64` when the default JVM is newer than
    Gradle's supported range (`Unsupported class file major version 69` = Java 25 under
    old Gradle).
 
@@ -78,10 +85,12 @@ build context (`/srv/stack/audio-quality-vote/build`), and rebuilds/restarts the
 stack's `audio-quality-vote` compose service. The container image packages the
 gretty application-export product (AudioQualityVote#26's deliverable); the compose
 service itself is devops#13's deliverable. No properties file ships and no
-configuration values ride the script — the stack's compose service delivers the
-`DB_*` environment keys and secret files by path (key names and paths only). The
-legacy flow (properties file + war scp to `vhost.cherokeedictionary.net`'s Tomcat)
-is superseded.
+configuration values ride the script — the stack's compose service delivers
+the environment keys (`DB_*` plus the application keys `AUDIO_FOLDER`,
+`GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET_FILE`) and secret files by path
+(key names and paths only). The legacy flow (properties file + war scp to
+`vhost.cherokeedictionary.net`'s Tomcat) is superseded — see also the
+deprecation notice in `deploy-dict.sh`'s header (AudioQualityVote#25).
 
 ## Failure policy (from the developer, mandatory)
 
