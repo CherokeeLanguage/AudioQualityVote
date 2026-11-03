@@ -3,6 +3,118 @@ title: 'Spec — dedicated ingest folder for the vote app: content policy and ri
 status: open
 labels:
 - needs-approval
-body: ''
+body: "# Spec — dedicated ingest folder for the vote app: content policy and ride-along\
+  \ copy (pre-req for the containerized deployment)\n\n**Provenance:** recorded developer\
+  \ directives 2026-11-02 (cherokeelanguage-devops#13 re-scope\ndiscussion): \"we\
+  \ need to separate out what the dictionary uses for audio file paths from the vote\n\
+  app. the vote app's audio files are long term, but ephemeral in the end after voting\
+  \ has been\nperformed. the dictionary app will need to have its own dedicated audio\
+  \ folders to prevent\ncross-ups, especially during audio vote [vote-app] maintenance\
+  \ which may include wipes of the\ndata\"; \"we need to have the container setup\
+  \ to pull from a folder that is on the docker host that\neither dev has full read/write\
+  \ access over, including each other's files\"; the audio copy rides\n\"the audio\
+  \ quality vote repo as a pre-req spec\". Devops counterpart: cherokeelanguage-devops#13\n\
+  (revised scope) provisions the host-side folder, its group access model, and the\
+  \ container mount.\n\nRepository: CherokeeLanguage/AudioQualityVote (trunk `main`\
+  \ @ `13e0d56`, verified 2026-11-02).\n\n## Problem\n\nThe old host's `audio` webapp\
+  \ tree (326 MB; `cno_cwl/` + `walc1/`, 7,450 mp3 + 2 wav) conflates\ndictionary-public\
+  \ material with possible vote-ingest material — the dictionary application\nhard-codes\
+  \ thirteen absolute `/audio/walc1` links into that tree, and the publicly-linked\
+  \ slice\nstays publicly served from the new stack's staged `/audio/*` assets block\
+  \ (devops phase-8\ndisposition). The vote application's ingest folder (`audio.folder`)\
+  \ must therefore hold **only\nvote-ingest material in its own dedicated folder**\
+  \ — never the dictionary's paths — so that\nvote-app maintenance, including data\
+  \ wipes, can never touch dictionary material. Whether any\nvote-ingest material\
+  \ needs to ride along from the old host is an open, operator-record-dependent\n\
+  question: the deployed `audio.folder` value on the old host is operator-held (the\
+  \ 2026-10-31\nprobe redacted values on sight).\n\n## Verified behavior this spec\
+  \ builds on (source-verified 2026-11-02, research card\n`audioqualityvote-audio-folder-behavior`\
+  \ in the devops store)\n\n- The ingest scan is strictly insert-only: it skips files\
+  \ already present as `_audio` rows,\n  inserts unknown `.mp3` + matching `.txt`\
+  \ pairs as uid=0 `audio/mpeg` rows, ignores orphans in\n  both directions, and **never\
+  \ deletes or updates rows from folder state** — no folder-driven\n  DB cleanup,\
+  \ reconciliation, or deletion exists anywhere in the server code.\n- An existing\
+  \ empty directory is a clean no-op (\"Found 0 audio files with matching text.\"\
+  \ →\n  \"Audio Load Check - DONE\", zero DB statements).\n- A file's identity is\
+  \ its **folder-relative path** (`StringUtils.substringAfter(file,\n  audioDataPath)`);\
+  \ the skip keys on row existence for that relative path.\n- The scan re-runs per\
+  \ REST request (per-request Jersey lifecycle) — a file dropped mid-day\n  ingests\
+  \ on the next request.\n- Serving streams exclusively from MariaDB blobs; the folder\
+  \ is intake-only.\n\n## Required end state\n\n- **R-1 — Content policy decided and\
+  \ recorded here:** default disposition is **start-empty** —\n  the deployment's\
+  \ serving path is the restored database (devops#12's restore), an empty folder\n\
+  \  is a verified clean no-op, and intake goes forward into the dedicated folder.\
+  \ The ride-along\n  branch (R-2) executes only if the operator record (O-1) shows\
+  \ un-ingested material worth\n  preserving.\n- **R-2 — Conditional ride-along copy:**\
+  \ if the operator record names an old-host ingest folder\n  with un-ingested material:\
+  \ the source set is that folder's `.mp3`+`.txt` pairs; the delta is\n  computed\
+  \ against the restored database's `file` column (the `AudioQualityVote_audio` rows'\n\
+  \  folder-relative paths — the restored truth from devops#12); exactly the delta\
+  \ copies into the\n  dedicated folder, **preserving relative path structure** (the\
+  \ scan keys on it); the copy is\n  verified (pair count and per-file sha256 match\
+  \ against the source) with dated evidence\n  stored with this issue. **Boundary\
+  \ rule (the separation invariant governs the source set):**\n  the source set excludes\
+  \ any path on the dictionary's public audio surfaces (the `cno_cwl/`\n  and `walc1/`\
+  \ slices served at `/audio/*`); where the operator-recorded folder is or overlaps\n\
+  \  that tree, the ride-along branch is **void** for the overlapping paths — the\
+  \ disposition\n  record (SC-1) states the void and its ground, and no copy of dictionary-public\
+  \ material\n  occurs under any reading of this spec.\n- **R-3 — Separation invariant:**\
+  \ this folder never contains, references, or overlaps the\n  dictionary's audio\
+  \ paths (the public `/audio/*` slice remains the dictionary's surface —\n  devops\
+  \ phase-8 disposition); vote-app maintenance including wipes can never reach dictionary\n\
+  \  material through it.\n- **R-4 — Seam with the devops deployment:** the host-side\
+  \ provisioning — directory creation,\n  the group access model (both developers\
+  \ full read/write over the folder including each other's\n  files: group-owned,\
+  \ group-rw files, setgid directories, and default ACLs where the mount has\n  them\
+  \ enabled — the established pattern of the phase-2 managed tree), and the container\n\
+  \  mount — is cherokeelanguage-devops#13's deliverable; this spec records the seam,\
+  \ consumes the\n  provisioned folder, and its copy (if any) lands after that provisioning\
+  \ exists.\n- **R-5 — Execution posture:** the old-host inventory (if the ride-along\
+  \ branch runs) reads the\n  operator-recorded folder read-only over the established\
+  \ SSH access path, values redacted\n  on sight; privileged steps follow the developer-executed/delegated\
+  \ arrangement of the sibling\n  phases. The app-side code requires no change for\
+  \ this spec (the scan behavior is verified).\n\n## Success criteria\n\n| ID | Criterion\
+  \ | Class | Instrument |\n|---|---|---|---|\n| SC-1 | The content-policy decision\
+  \ is recorded in this issue with the operator record behind it | structural | this\
+  \ issue carries the decision (start-empty, or ride-along naming the operator-recorded\
+  \ source folder path — with any boundary-rule void stated and grounded) and the\
+  \ operator's answer to O-1 **or a dated record that none exists**, dated |\n| SC-2\
+  \ | Ride-along branch (only if decided): the delta is computed and the copy is verified\
+  \ | structural | dated evidence with this issue: the ced1 pair inventory as a **path\
+  \ list** (not a count alone), the restored-DB `file`-set as a **path set**, the\
+  \ **computed delta path list** (source pairs whose relative paths are absent from\
+  \ the DB set, under the R-2 boundary rule), the copied count, a **destination-side\
+  \ check that the folder's contents equal the delta set (count AND membership)**,\
+  \ and per-file **sha256** match copied vs source; zero unverified files |\n| SC-3\
+  \ | The destination folder contains exactly the decided content at deployment first-boot\
+  \ | structural | observable through the devops#13 instruments that commit the check:\
+  \ #13's SC-10 contents capture (the folder's contents vs the decided disposition)\
+  \ and #13's SC-4 first-boot log capture (the ingest scan's found-count reflects\
+  \ the folder's content state at boot — the scan reads without mutating); empty under\
+  \ start-empty, or exactly the verified copied set |\n| SC-4 | The separation invariant\
+  \ holds in the delivered state | structural | the folder's contents (SC-2/SC-3 evidence)\
+  \ include no path overlapping the dictionary's public audio slice (`cno_cwl/`/`walc1/`\
+  \ surfaces served at `/audio/*`); the decision record states the invariant |\n\n\
+  ## Out of scope\n\n- Host-side folder provisioning, group access model, and the\
+  \ container mount (devops#13's\n  deliverable — this spec consumes it).\n- The dictionary's\
+  \ public audio slice and its phase-8 disposition.\n- Any application code change\
+  \ (the scan behavior is verified; the filed defects #22/#23 are\n  tracked separately\
+  \ and are not prerequisites).\n- Bulk movement of the whole `audio` tree (explicitly\
+  \ rejected — the separation invariant\n  forbids conflating the corpora).\n\n##\
+  \ Open items\n\n- **O-1 — Operator record (blocks only the ride-along branch):**\
+  \ the old host's actual\n  `audio.folder` value (path — recordable; not a credential)\
+  \ and whether un-ingested material\n  remains there. Start-empty needs no answer;\
+  \ the default disposition stands if the operator\n  records none.\n- **G-1 — Un-ingested\
+  \ pair existence:** unknown until O-1 and the delta computation; the delta\n  instrument\
+  \ (SC-2) resolves it mechanically.\n\n## Traceability\n\n| Source | Requirement\
+  \ | Criteria |\n|---|---|---|\n| Separation directive (dedicated folders; wipes;\
+  \ ephemeral-after-voting) | R-1, R-3 | SC-1, SC-4 |\n| Shared host folder, both\
+  \ devs full rw incl. each other's files | R-4 (seam) | SC-3 |\n| Pre-req placement\
+  \ directive | the spec's position ahead of the deployment | SC-3 |\n| Verified folder\
+  \ behavior (research card) | R-1's start-empty safety; R-2's relative-path rule\
+  \ | SC-2, SC-3 |\n| devops#12 restored DB (manifest/reconciliation truth) | R-2's\
+  \ delta baseline | SC-2 |\n| Floor norm (no secrets; redaction on sight) | R-5 |\
+  \ SC-2 |\n\n\U0001F916 Co-authored with AI: OpenCode (huggingface/zai-org/GLM-5.3-Flash)\n\
+  \n"
 created_at: '2026-11-03T17:33:12+00:00'
-updated_at: '2026-11-03T17:33:12+00:00'
+updated_at: '2026-11-03T17:33:17+00:00'
