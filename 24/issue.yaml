@@ -54,14 +54,17 @@ body: "# Spec — dedicated ingest folder for the vote app: content policy and r
   \ scan keys on it); the copy is\n  verified (pair count and per-file sha256 match\
   \ against the source) with dated evidence\n  stored with this issue. **Boundary\
   \ rule (the separation invariant governs the source set):**\n  the source set excludes\
-  \ any path on the dictionary's public audio surfaces (the `cno_cwl/`\n  and `walc1/`\
-  \ slices served at `/audio/*`); where the operator-recorded folder is or overlaps\n\
-  \  that tree, the ride-along branch is **void** for the overlapping paths — the\
-  \ disposition\n  record (SC-1) states the void and its ground, and no copy of dictionary-public\
-  \ material\n  occurs under any reading of this spec.\n- **R-3 — Separation invariant:**\
-  \ this folder never contains, references, or overlaps the\n  dictionary's audio\
-  \ paths (the public `/audio/*` slice remains the dictionary's surface —\n  devops\
-  \ phase-8 disposition); vote-app maintenance including wipes can never reach dictionary\n\
+  \ any path of the dictionary's publicly-linked slice — the `walc1` tree\n  plus\
+  \ every other path the dictionary application references (devops#17's split disposition,\n\
+  \  which classifies the `cno_cwl/` tree as vote-ingest material, not dictionary-public\
+  \ material;\n  it may land in this folder per #17's placement through #13's volume\
+  \ decision); where the\n  operator-recorded folder is or overlaps that slice, the\
+  \ ride-along branch is **void** for the\n  overlapping paths — the disposition record\
+  \ (SC-1) states the void and its ground, and no copy\n  of dictionary-public material\
+  \ occurs under any reading of this spec.\n- **R-3 — Separation invariant:** this\
+  \ folder never contains, references, or overlaps the\n  dictionary's audio paths\
+  \ (the public `/audio/*` slice remains the dictionary's surface —\n  devops phase-8\
+  \ disposition); vote-app maintenance including wipes can never reach dictionary\n\
   \  material through it.\n- **R-4 — Seam with the devops deployment:** the host-side\
   \ provisioning — directory creation,\n  the group access model (both developers\
   \ full read/write over the folder including each other's\n  files: group-owned,\
@@ -93,28 +96,29 @@ body: "# Spec — dedicated ingest folder for the vote app: content policy and r
   \ the folder's content state at boot — the scan reads without mutating); empty under\
   \ start-empty, or exactly the verified copied set |\n| SC-4 | The separation invariant\
   \ holds in the delivered state | structural | the folder's contents (SC-2/SC-3 evidence)\
-  \ include no path overlapping the dictionary's public audio slice (`cno_cwl/`/`walc1/`\
-  \ surfaces served at `/audio/*`); the decision record states the invariant |\n\n\
-  ## Out of scope\n\n- Host-side folder provisioning, group access model, and the\
-  \ container mount (devops#13's\n  deliverable — this spec consumes it).\n- The dictionary's\
-  \ public audio slice and its phase-8 disposition.\n- Any application code change\
-  \ (the scan behavior is verified; the filed defects #22/#23 are\n  tracked separately\
-  \ and are not prerequisites).\n- Bulk movement of the whole `audio` tree (explicitly\
-  \ rejected — the separation invariant\n  forbids conflating the corpora).\n\n##\
-  \ Open items\n\n- **O-1 — Operator record (blocks only the ride-along branch):**\
-  \ the old host's actual\n  `audio.folder` value (path — recordable; not a credential)\
-  \ and whether un-ingested material\n  remains there. Start-empty needs no answer;\
-  \ the default disposition stands if the operator\n  records none.\n- **G-1 — Un-ingested\
-  \ pair existence:** unknown until O-1 and the delta computation; the delta\n  instrument\
-  \ (SC-2) resolves it mechanically.\n\n## Traceability\n\n| Source | Requirement\
-  \ | Criteria |\n|---|---|---|\n| Separation directive (dedicated folders; wipes;\
-  \ ephemeral-after-voting) | R-1, R-3 | SC-1, SC-4 |\n| Shared host folder, both\
-  \ devs full rw incl. each other's files | R-4 (seam) | SC-3 |\n| Pre-req placement\
-  \ directive | the spec's position ahead of the deployment | SC-3 |\n| Verified folder\
-  \ behavior (research card) | R-1's start-empty safety; R-2's relative-path rule\
-  \ | SC-2, SC-3 |\n| devops#12 restored DB (manifest/reconciliation truth) | R-2's\
-  \ delta baseline | SC-2 |\n| Floor norm (no secrets; redaction on sight) | R-5 |\
-  \ SC-2 |\n\n\U0001F916 Co-authored with AI: OpenCode (huggingface/zai-org/GLM-5.3-Flash)\n\
-  \n"
+  \ include no path overlapping the dictionary's publicly-linked slice — the `walc1`\
+  \ tree plus every other path the dictionary application references (devops#17's\
+  \ split disposition; the `cno_cwl/` tree is vote-ingest material under that disposition);\
+  \ the decision record states the invariant |\n\n## Out of scope\n\n- Host-side folder\
+  \ provisioning, group access model, and the container mount (devops#13's\n  deliverable\
+  \ — this spec consumes it).\n- The dictionary's public audio slice and its phase-8\
+  \ disposition.\n- Any application code change (the scan behavior is verified; the\
+  \ filed defects #22/#23 are\n  tracked separately and are not prerequisites).\n\
+  - Bulk movement of the whole `audio` tree (explicitly rejected — the separation\
+  \ invariant\n  forbids conflating the corpora).\n\n## Open items\n\n- **O-1 — Operator\
+  \ record (blocks only the ride-along branch):** the old host's actual\n  `audio.folder`\
+  \ value (path — recordable; not a credential) and whether un-ingested material\n\
+  \  remains there. Start-empty needs no answer; the default disposition stands if\
+  \ the operator\n  records none.\n- **G-1 — Un-ingested pair existence:** unknown\
+  \ until O-1 and the delta computation; the delta\n  instrument (SC-2) resolves it\
+  \ mechanically.\n\n## Traceability\n\n| Source | Requirement | Criteria |\n|---|---|---|\n\
+  | Separation directive (dedicated folders; wipes; ephemeral-after-voting) | R-1,\
+  \ R-3 | SC-1, SC-4 |\n| Shared host folder, both devs full rw incl. each other's\
+  \ files | R-4 (seam) | SC-3 |\n| Pre-req placement directive | the spec's position\
+  \ ahead of the deployment | SC-3 |\n| Verified folder behavior (research card) |\
+  \ R-1's start-empty safety; R-2's relative-path rule | SC-2, SC-3 |\n| devops#12\
+  \ restored DB (manifest/reconciliation truth) | R-2's delta baseline | SC-2 |\n\
+  | Floor norm (no secrets; redaction on sight) | R-5 | SC-2 |\n\n\U0001F916 Co-authored\
+  \ with AI: OpenCode (huggingface/zai-org/GLM-5.3-Flash)\n\n"
 created_at: '2026-11-03T17:33:12+00:00'
-updated_at: '2026-11-03T17:33:17+00:00'
+updated_at: '2026-11-03T18:28:26+00:00'
