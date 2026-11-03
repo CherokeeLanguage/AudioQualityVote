@@ -1,0 +1,21 @@
+spec:
+  date: 2026-11-03
+  result: PASS
+  notes: >
+    Plan-validation dispatch found the SC-5 confinement/SOP-bump conflict;
+    spec revised in place (SC-5 declares the root version line as the stated
+    exception); re-validated fresh-context — PASS, zero findings.
+plan:
+  date: 2026-11-03
+  result: PASS
+  notes: >
+    First dispatch FAIL (two findings: SC-5 conflict; dev-leg daemon caveat
+    omitted); both remediated (spec edit above; daemon caveat carried into
+    Item 4); re-dispatch — PASS, zero findings.
+implementation-evidence:
+  SC-1: "buildProduct run 2026-11-03 (working tree + pristine shallow checkout) — full product tree; artifacts/buildProduct.log"
+  SC-2: "conf/server.json parse — contextPath /AudioQualityVote, httpPort 8080 (serverConfig), jvmArgs [-Dfile.encoding=UTF-8, -Xmx512M], no -Ddebug=true; artifacts/server.json"
+  SC-3: "containerized leg — shell 200, CSV 200 with 3 data rows == 3 distinct seeded aids, clean ingest-scan lines, zero exceptions; shutdown: SIGTERM unhandled in 10s grace -> SIGKILL exit=137, no shutdown lines (G-1: kill path); artifacts/aqv26-prod-container.log, SC3-summary.txt"
+  SC-4: "VERSION.txt = 1.1.0; product jars record gretty 3.1.9 + tomcat-embed 9.0.118; artifacts/VERSION.txt"
+  SC-5: "git diff main — exactly two build-file edits (war jvmArgs, root version line); no other gretty settings, sources, or dependencies touched"
+  SC-6: "dev-run leg — daemon-free appStart with production jvmArgs, shell 200 twice, clean appStop; artifacts/appStart-devrun.log"
