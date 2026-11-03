@@ -1,5 +1,5 @@
 title: Spec — production packaging via the gretty application-export workflow (buildProduct)
-status: open
+status: closed
 labels:
 - documentation
 body: "# Spec — production packaging via the gretty application-export workflow (buildProduct)\n\
@@ -128,5 +128,7 @@ body: "# Spec — production packaging via the gretty application-export workflo
   \ |\n| Dev-run continuity (R-2's appStart clause) | R-2 | SC-6 |\n\n\U0001F916 Co-authored\
   \ with AI: OpenCode (huggingface/zai-org/GLM-5.3-Flash)\n\n"
 created_at: '2026-11-03T16:40:57+00:00'
-updated_at: '2026-11-03T16:41:25+00:00'
+updated_at: '2026-11-03T17:19:12+00:00'
 github_url: https://github.com/CherokeeLanguage/AudioQualityVote/issues/26
+closed_at: '2026-11-03T17:19:12+00:00'
+close_reason: completed
