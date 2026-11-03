@@ -1,5 +1,5 @@
 title: Spec — migrate to env-variable database connections (caddy-routed docker instances)
-status: open
+status: closed
 labels:
 - documentation
 body: ''
