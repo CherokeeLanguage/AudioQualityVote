@@ -73,7 +73,12 @@ Two facts bound the change and are verified against the code:
   `jdbc:mariadb://<DB_HOST>:<DB_PORT>/<DB_NAME>?allowMultiQueries=true` — the native 2.7.0
   scheme, the vote path's functional parameter preserved, and no other parameters (the
   MySQL-ism leftovers are dropped, per the driver facts above). The driver class
-  (`org.mariadb.jdbc.Driver`) and the existing HikariCP pool settings are unchanged.
+  (`org.mariadb.jdbc.Driver`) and the existing HikariCP pool settings are unchanged
+  except one — revised 2026-11-03 on the developer's directive during verification: the
+  pool's `connectionTimeout` changes from `0` (wait indefinitely) to a finite value, so a
+  database that cannot be connected to (wrong credentials, unreachable host) surfaces as a
+  request error in bounded time instead of an unbounded hang; the driver class and every
+  other pool setting stand.
 - **R-4 — No properties file survives (developer's item (b)).** The end state has no properties
   file. The DB path adds no properties-file dependency and the `jdbc.*` properties extraction is
   deleted with this change (dead code rides the change that orphans it). The file mechanism's
@@ -125,13 +130,14 @@ Two facts bound the change and are verified against the code:
 
 | ID | Criterion | Class | Instrument |
 |---|---|---|---|
-| SC-1 | The DB connection resolves wholly from the `DB_*` environment keys; the assembled URL is exactly `jdbc:mariadb://<DB_HOST>:<DB_PORT>/<DB_NAME>?allowMultiQueries=true`; the driver class and pool settings are unchanged | structural | source parse over the db module: zero `jdbc.*` properties reads remain; the URL assembly carries the scheme, `allowMultiQueries=true`, and no other parameter; the HikariCP config's driver class and pool settings match trunk's |
+| SC-1 | The DB connection resolves wholly from the `DB_*` environment keys; the assembled URL is exactly `jdbc:mariadb://<DB_HOST>:<DB_PORT>/<DB_NAME>?allowMultiQueries=true`; the driver class and pool settings are unchanged except `connectionTimeout`, which is a finite value (revised 2026-11-03) | structural | source parse over the db module: zero `jdbc.*` properties reads remain; the URL assembly carries the scheme, `allowMultiQueries=true`, and no other parameter; the HikariCP config's driver class and pool settings match trunk's except a finite `connectionTimeout` |
 | SC-2 | The application connects and serves against a database reached solely through the env-provided parameters | behavioral | smoke run: throwaway MariaDB container + the application launched with the `DB_*` environment set and a properties file carrying no `jdbc.*` keys (absent entirely once #25 composes) — `GET /AudioQualityVote/api/audio/votes/list/AudioQualityVotes.csv` → 200 whose body carries the CSV header row (the header proves the votes query executed through the env-resolved pool; row-level reconciliation is devops#13's check); the captured log carries no configuration-error lines |
 | SC-3 | The multi-statement vote path executes through the assembled URL — `allowMultiQueries=true` proven, not assumed | behavioral | the revised DB test executes the DAO's multi-statement update (`addPendingEntry`) through the same URL-assembly code the application uses, against the local test MariaDB: both statements' effects commit (the pending row is inserted and carries `txt`/`file`); without the parameter the same statement errors, so the passing assertion through the assembled URL is the proof |
 | SC-4 | The password-form contract is enforced | behavioral | three-run env matrix on the smoke harness: both `DB_PASSWORD` and `DB_PASSWORD_FILE` set → the configuration error surfaces and no connection is attempted; neither set → the configuration error surfaces; exactly one set → the connection succeeds (the file form via SC-2's run, the direct form via the test run) |
 | SC-5 | No credential material in the change's artifacts; the `.env` split is in place | structural | a detect-secrets-class scan over the change's diff returns zero hits; `.gitignore` carries the `.env` entry; `.env.example` exists (tracked) with placeholder `DB_*` entries; no shipped configuration or documentation carries an operator value |
 | SC-6 | Database-touching tests route through the env contract | structural + behavioral | structural: tracked test sources carry no hardcoded connection URLs or credentials; behavioral: with the local test MariaDB's `DB_*` keys set the revised tests pass; with the keys absent they skip with the stated reason in the output |
 | SC-7 | The deploy script's new shape: container deployment via vhost-58 | structural | script parse: no properties-file shipping, no war scp to the old Tomcat host; targets `vhost-58.cherokeedictionary.net`; deploys the application container with env/secret-by-path delivery (key names and paths only). The script's end-to-end run is verified by the deployment composition (devops#13's SC-1/SC-4 instruments) once #26's export lands — not by this spec's instrument |
+| SC-8 | A database that cannot be connected to fails in bounded time — a request against a wrong-credential or unreachable database surfaces as an error within the pool's connection timeout, never an unbounded hang | behavioral | smoke run with a wrong password via `DB_PASSWORD_FILE`: the CSV request returns an error response within the pool's connection timeout (bounded — no indefinite wait) |
 
 ## Impact
 
