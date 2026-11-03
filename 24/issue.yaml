@@ -2,7 +2,7 @@ title: 'Spec — dedicated ingest folder for the vote app: content policy and ri
   copy (pre-req for the containerized deployment)'
 status: closed
 labels:
-- needs-approval
+- documentation
 body: "# Spec — dedicated ingest folder for the vote app: content policy and ride-along\
   \ copy (pre-req for the containerized deployment)\n\n**Provenance:** recorded developer\
   \ directives 2026-11-02 (cherokeelanguage-devops#13 re-scope\ndiscussion): \"we\
@@ -121,6 +121,6 @@ body: "# Spec — dedicated ingest folder for the vote app: content policy and r
   | Floor norm (no secrets; redaction on sight) | R-5 | SC-2 |\n\n\U0001F916 Co-authored\
   \ with AI: OpenCode (huggingface/zai-org/GLM-5.3-Flash)\n\n"
 created_at: '2026-11-03T17:33:12+00:00'
-updated_at: '2026-11-03T19:15:56+00:00'
+updated_at: '2026-11-03T19:16:15+00:00'
 closed_at: '2026-11-03T19:15:56+00:00'
 close_reason: completed
