@@ -1,1 +1,8 @@
-comments: []
+comments:
+- type: stakeholder
+  body: 'Decision recorded 2026-11-03: content policy start-empty (R-1 default). No
+    ride-along copy (R-2 branch not taken); O-1 not pursued under this disposition.
+    Separation invariant stands (R-3). SC-1 satisfied by the dated remote record;
+    SC-2 void; SC-3/SC-4 execute through cherokeelanguage-devops#13''s instruments
+    at deployment first-boot. Remote comment: https://github.com/CherokeeLanguage/AudioQualityVote/issues/24#issuecomment-6611024085'
+  timestamp: '2026-11-03T17:33:37+00:00'
