@@ -1,8 +1,132 @@
 title: Spec — production packaging via the gretty application-export workflow (buildProduct)
 status: open
 labels:
-- needs-approval
 - documentation
-body: ''
+body: "# Spec — production packaging via the gretty application-export workflow (buildProduct)\n\
+  \n**Provenance:** recorded developer directive 2026-11-02 (cherokeelanguage-devops#13\
+  \ re-scope\ndiscussion): \"this should use the built-in gretty application export\
+  \ workflow if it doesn't\nalready\" — verified it does not (repo-wide grep for `buildProduct`/`archiveProduct`/product\n\
+  configuration: zero matches; gretty 3.1.9 is applied only as a dev-run engine and\
+  \ war builder;\ntoday's production path is `deploy-dict.sh` scp'ing the war onto\
+  \ a stock Tomcat 9.0.7). Split\ndirective: \"let's split it into two specs\" — this\
+  \ is the packaging half; the configuration half\nis #25 (env-only application configuration).\
+  \ Devops consumer: cherokeelanguage-devops#13\n(revised scope) packages this exported\
+  \ product into the deployed image.\n\nRepository: CherokeeLanguage/AudioQualityVote\
+  \ (trunk `main` @ `13e0d56`, verified 2026-11-02).\n\n## Problem\n\nThe containerized\
+  \ deployment needs a self-contained, runnable application artifact. The repo\nbuilds\
+  \ `AudioQualityVote.war` but has no export/packaging workflow for a deployable tree;\
+  \ the\ndeveloper directs the gretty application-export workflow as the packaging.\
+  \ Adopting it means the\ndeployment consumes the exported product (start scripts\
+  \ + baked server config + embedded\ncontainer runtime + the war) instead of hand-assembling\
+  \ a war onto a stock Tomcat base.\n\n## Verified facts this spec builds on (research\
+  \ card `gretty-product-export-workflow` in the devops store, 2026-11-02; gretty\
+  \ source at tag v3.1.9)\n\n- The repo pins `org.gretty` **3.1.9** (settings.gradle\
+  \ `pluginManagement`; wrapper Gradle\n  9.8.2). Configureless `buildProduct` works\
+  \ on any gretty-applying project and inherits the\n  project's `gretty { }` settings;\
+  \ run on `:audio-quality-vote-war` it bundles exactly that\n  webapp (at the root\
+  \ project it would bundle all three gretty webapps — wrong shape).\n- The product\
+  \ tree: `run.sh`/`start.sh`/`stop.sh`/`restart.sh`, `VERSION.txt`,\n  `conf/server.json`\
+  \ (server + webapp config baked at build time), `runner/`, `starter/`,\n  `servletContainer/`\
+  \ (embedded Tomcat jars — 3.1.9's tomcat9 pins **9.0.118**),\n  `webapps/AudioQualityVote.war`,\
+  \ plus `extraResources/` for the GWT build output referenced\n  from `server.json`.\n\
+  - The tomcat9 product does **not** bundle a real Tomcat distribution — it bundles\
+  \ embedded\n  Tomcat driven by gretty's `GrettyStarter`; the product root acts as\
+  \ CATALINA_BASE\n  (`temp/`, `work/` created at runtime — the image must allow those\
+  \ writes; devops#13's concern).\n- Launch scripts pass no environment through (`JAVA_OPTS`\
+  \ is never read); JVM args come from\n  `server.json`'s `serverConfig.jvmArgs`,\
+  \ baked from the war module's `gretty { jvmArgs }`.\n  The JVM process still inherits\
+  \ the container's environment — the env-var configuration\n  (#19/#25) works under\
+  \ this packaging unchanged.\n- Scripts run the server in the foreground, but the\
+  \ two start paths differ: **`start.sh` is the\n  container-safe foreground path**\
+  \ (plain block on the server thread); **`run.sh` is the\n  interactive path** —\
+  \ the baked `server.json` carries no `interactiveMode`, so the default\n  `stopOnKeyPress`\
+  \ applies and the starter reads stdin: under headless stdin (a container\n  default)\
+  \ it reads EOF and stops itself immediately after starting. The deployment-shaped\
+  \ run\n  uses `start.sh`; `stop`/`restart` go through a negotiated service port;\
+  \ the starter derives\n  paths from its own jar location (the tree is relocatable,\
+  \ CWD-independent).\n- Version landscape: gretty 4.x/5.x sampled lines (v4.1.10,\
+  \ v5.1.0, master) dropped tomcat9\n  support — the coupling note rests on those\
+  \ sampled tags (the research card's disclosed\n  sampling limit), with the repo's\
+  \ existing pin (3.1.9) as the operative fact: the pinned\n  release is the tomcat9-capable\
+  \ line this packaging uses. Adopting the tomcat9 product accepts\n  that coupling.\
+  \ Side effect: embedded Tomcat 9.0.118 upgrades the old host's stock Tomcat\n  9.0.7.\n\
+  \n## Required end state\n\n- **R-1 — The production artifact is the gretty product\
+  \ export:** invoked through the\n  repository's own wrapper as `./gradlew :audio-quality-vote-war:buildProduct`,\
+  \ producing the\n  deployable product tree for the war webapp alone.\n- **R-2 —\
+  \ Production JVM args:** the war module's `gretty { jvmArgs }` becomes the production\n\
+  \  set — `-Xmx512M` (the stack's container posture) and `-Dfile.encoding=UTF-8`;\
+  \ the dev-time\n  `-Ddebug=true` is removed. Dev `appStart` keeps working with the\
+  \ production set.\n- **R-3 — Context continuity:** the exported `server.json` carries\n\
+  \  `webApps[0].contextPath = \"AudioQualityVote\"` (unchanged from the module's\
+  \ existing\n  `contextPath` setting) — the segment the devops routing line forwards\
+  \ and the basis of the\n  table-prefix continuity.\n- **R-4 — Provenance recorded:**\
+  \ the product's `VERSION.txt` carries the project version\n  (semver-per-PR, per\
+  \ the merged #15/#17 work); the build records the gretty version (3.1.9)\n  and\
+  \ the embedded-Tomcat version (9.0.118) it packaged — the containerization's provenance\n\
+  \  inputs.\n- **R-5 — No packaging regression:** the war module's other gretty settings\
+  \ (`httpPort = 8080`,\n  `servletContainer = 'tomcat9'`, overlays, `extraResourceBase`,\
+  \ war name\n  `AudioQualityVote.war`) are unchanged; the export adds no new repository\
+  \ dependencies and no\n  application code changes.\n\n## Success criteria\n\n| ID\
+  \ | Criterion | Class | Instrument |\n|---|---|---|---|\n| SC-1 | The wrapper-invoked\
+  \ export produces the product tree | structural | run `./gradlew :audio-quality-vote-war:buildProduct`\
+  \ (the repo wrapper; captured output); parse `build/output/`: start/run/stop/restart\
+  \ scripts, `conf/server.json`, `runner/`, `starter/`, `servletContainer/` (tomcat-embed\
+  \ 9.0.118 jars), `webapps/AudioQualityVote.war`, `extraResources/` (carrying the\
+  \ GWT build output — the client delivery the product serves via `server.json`'s\
+  \ `extraResourceBases`), `VERSION.txt` |\n| SC-2 | The baked server config is the\
+  \ production shape | structural | parse `conf/server.json`: `contextPath == \"AudioQualityVote\"\
+  `, `httpPort == 8080`, `jvmArgs` carries `-Xmx512M` and `-Dfile.encoding=UTF-8`\
+  \ and carries no `-Ddebug=true` |\n| SC-3 | The exported product runs and serves,\
+  \ and its container-shaped shutdown behavior is observed | behavioral | (after #19/#25\
+  \ land — the composition this smoke verifies) run the product **containerized**\
+  \ (a throwaway container wrapping the product tree) with `start.sh` as the entry\
+  \ command, against a throwaway MariaDB **seeded to match the CSV's rendering semantics**\
+  \ — the CSV renders one row per **distinct aid carrying at least one non-zero vote**\
+  \ (entries grouped by aid; zero-valued entries render nothing), and each rendered\
+  \ row reads the aid's `_audio` row, so the seed is: `_audio` rows for the voted\
+  \ aids **plus** non-zero vote values for them (a votes-only seed makes the endpoint\
+  \ error, not 200); with the `DB_*` environment (per #19) and the application env\
+  \ keys (per #25), properties file absent: `GET /AudioQualityVote/` → 200 (GWT shell);\
+  \ `GET /AudioQualityVote/api/audio/votes/list/AudioQualityVotes.csv` → 200 whose\
+  \ data-row count equals the number of distinct seeded voted aids; the log carries\
+  \ the clean ingest-scan lines and no config errors; **then stop the container (`docker\
+  \ stop`-equivalent SIGTERM) and record the shutdown behavior** (clean exit / hang\
+  \ / kill — G-1's resolution) in the captured log |\n| SC-4 | Provenance recorded\
+  \ | structural | `VERSION.txt` carries the project version; the build log/records\
+  \ state gretty 3.1.9 and embedded Tomcat 9.0.118 matching the pinned plugin line\
+  \ |\n| SC-5 | No packaging regression | structural | `git diff` over the change:\
+  \ build-file edits confined to the war module's `jvmArgs`; all other gretty settings\
+  \ and application sources untouched; zero new dependencies |\n| SC-6 | The dev-run\
+  \ path keeps working with the production jvmArgs (R-2's preserved behavior) | behavioral\
+  \ | with the changed `jvmArgs` in place and the properties/env setup the dev-run\
+  \ documentation states, `./gradlew :audio-quality-vote-war:appStart` (the repo wrapper)\
+  \ launches and the GWT shell serves 200 on the dev port; the launch and fetch are\
+  \ captured |\n\n## Out of scope\n\n- Docker image assembly, compose service, host\
+  \ provisioning, routing (devops#13's deliverables).\n- The env-var configuration\
+  \ surface (#19, #25) and the DB migration (#19).\n- The legacy `deploy-dict.sh`\
+  \ path's behavior on the old host (deprecation-noticed by #25; the\n  cutover replaces\
+  \ the old deployment).\n- Tomcat 10/11 + jakarta modernization (rejected — the recorded\
+  \ as-is decision stands).\n- gretty version upgrades (the sampled 4.x/5.x lines\
+  \ drop tomcat9 support; the pinned 3.1.9 is\n  the accepted coupling).\n\n## Open\
+  \ items\n\n- **O-1 — Gradle 9.8.2 × gretty 3.1.9 `buildProduct` compatibility:**\
+  \ verified working for the\n  dev tasks per the repo's SOP, but the export task\
+  \ combination was not executed in research\n  (read-only session; source-level layout\
+  \ verification only). The SC-1 build run is the\n  resolving instrument; a verified\
+  \ failure of the sanctioned wrapper invocation is\n  report-with-evidence-and-halt\
+  \ — never a substitute toolchain.\n- **G-1 — SIGTERM behavior of the embedded-Tomcat\
+  \ runner under `docker stop`** (graceful\n  shutdown vs the `stop.sh` service-port\
+  \ path) — untested in research; SC-3's instrument carries\n  the containerized stop\
+  \ observation that resolves it (the captured shutdown behavior is the\n  answer\
+  \ devops#13's container design consumes).\n\n## Traceability\n\n| Source | Requirement\
+  \ | Criteria |\n|---|---|---|\n| \"use the built-in gretty application export workflow\"\
+  \ | R-1 | SC-1 |\n| \"minimal needed changes\" | R-5; out-of-scope bounds | SC-5\
+  \ |\n| Stack posture (512 MiB; the devops container limits) | R-2 | SC-2 |\n| Segment\
+  \ continuity (devops#13 R-2 grounds) | R-3 | SC-2, SC-3 |\n| Versioning discipline\
+  \ (semver-per-PR, merged #17) | R-4 | SC-4 |\n| #19/#25 (env-only config) | SC-3's\
+  \ smoke composition | SC-3 |\n| Research card (gretty facts, version landscape —\
+  \ with its disclosed sampling limits) | R-1's shape; the coupling note | SC-1, SC-4\
+  \ |\n| Dev-run continuity (R-2's appStart clause) | R-2 | SC-6 |\n\n\U0001F916 Co-authored\
+  \ with AI: OpenCode (huggingface/zai-org/GLM-5.3-Flash)\n\n"
 created_at: '2026-11-03T16:40:57+00:00'
-updated_at: '2026-11-03T16:40:57+00:00'
+updated_at: '2026-11-03T16:41:25+00:00'
+github_url: https://github.com/CherokeeLanguage/AudioQualityVote/issues/26
