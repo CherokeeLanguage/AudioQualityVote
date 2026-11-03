@@ -1,0 +1,22 @@
+spec:
+- round: 1
+  date: '2026-11-03'
+  verdict: FAIL
+  reviewer: fresh-context dispatch (general sub-agent, no prior context)
+  findings:
+  - class: cross-reference sufficiency
+    classification: finding
+    detail: R-2's boundary rule and SC-4's instrument named the dictionary's public
+      audio surfaces as "the `cno_cwl/` and `walc1/` slices served at `/audio/*`" —
+      the cited devops#17 split disposition places `cno_cwl/` outside that surface
+      (it leaves the public surface per #17 R-2(e); #17 R-2(c)/SC-3 classify it as
+      vote-ingest material placed per #13's volume decision). Factual defect within
+      the family; effects — the recorded policy's ground wrong for half its excluded
+      set; SC-4's instrument would fail a folder holding `cno_cwl/` paths though the
+      separation invariant is not violated; the boundary rule silently foreclosed
+      #17(c)'s placement plan (blast-radius consequence).
+    remediation: In-place wording fix in R-2's boundary rule and SC-4's instrument
+      (local store body and remote body reconciled 2026-11-03) — the excluded set
+      grounded in devops#17's disposition as the dictionary's publicly-linked slice
+      (the `walc1` tree plus every other path the dictionary application references),
+      with the `cno_cwl/` tree recorded as vote-ingest material under that disposition.
