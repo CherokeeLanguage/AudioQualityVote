@@ -92,6 +92,15 @@ the environment keys (`DB_*` plus the application keys `AUDIO_FOLDER`,
 `vhost.cherokeedictionary.net`'s Tomcat) is superseded — see also the
 deprecation notice in `deploy-dict.sh`'s header (AudioQualityVote#25).
 
+### Host roles (2026-11-09, operator directive — AudioQualityVote#30)
+
+`vhost-58.cherokeedictionary.net` (104.251.216.58, the delivered Docker
+serving stack) is the **prod host** — `deploy-dict.sh`'s target above is
+the production deployment. `vhost-175.cherokeedictionary.net`
+(63.142.255.175, = ced1) is the **dev host** — dev-stack work lands
+there, not on the prod host. Org-side fact record: cherokeelanguage-devops
+`docs/infrastructure/host-roles-vhost-58-vhost-175.md`.
+
 ## Failure policy (from the developer, mandatory)
 
 Hiding or papering over errors is a serious policy violation. Failure branches surface as
