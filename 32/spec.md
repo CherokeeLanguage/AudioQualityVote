@@ -35,7 +35,7 @@ No script change in this ticket; the stage-script seam is R-3's recorded mapping
 |---|---|---|---|
 | SC-1 | `SOP.md` carries the switchover section with every R-1 element | structural | file parse against R-1 |
 | SC-2 | The section states the continuity bar, the rollback rule, and the secrets-by-path rule (no secret values anywhere in the section) (R-2, R-1's secrets terms) | structural | file parse + secret-pattern check on the section |
-| SC-3 | A rehearsal flip of the `aqv` upstream executes with a continuity loop reporting zero failed requests across the window — on the dev-host replica stack (vhost-175, the devops#32 replica) when it carries the slot, else the next executed aqv deploy carries the capture; the executed capture is recorded on this issue | behavioral | executed continuity loop + capture on the issue |
+| SC-3 | The first aqv deploy executed under the SoP carries the continuity capture — a request loop through the edge across the flip window reporting zero failed requests, recorded on this issue (until that deploy occurs, this criterion is pending work) | behavioral | executed continuity loop + capture on the issue |
 
 ## Out of scope
 
