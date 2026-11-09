@@ -1,16 +1,16 @@
 # Spec — aqv switchover SoP: zero-connection-loss image replacement behind Caddy
 
-> Ticket AudioQualityVote#32. The org-level SoP is cherokeelanguage-devops#N (sibling ticket). This ticket puts the aqv container's own switchover procedure in this repository's SOP.md, conforming to the org runbook.
+> Ticket AudioQualityVote#32. The org-level SoP is cherokeelanguage-devops#42 (sibling ticket). This ticket puts the aqv container's own switchover procedure in this repository's SOP.md, conforming to the org runbook.
 
 ## Problem
 
-The aqv container's replacement path recreates it in place — the devops stage script (`audioqualityvote-vhost-58-stage.sh`) converges the state by rebuilding `aqv:1.1.0` and bringing the compose service up, and any compose-level recreate stops the old container before the new one is healthy, so the `/AudioQualityVote` route 502s for the recreate+boot window. The org SoP (devops#N) makes zero-connection-loss switchover the standard for every container on the stack, with the blue-green sequence as the app-container class's procedure.
+The aqv container's replacement path recreates it in place — the devops stage script (`audioqualityvote-vhost-58-stage.sh`) converges the state by rebuilding `aqv:1.1.0` and bringing the compose service up, and any compose-level recreate stops the old container before the new one is healthy, so the `/AudioQualityVote` route 502s for the recreate+boot window. The org SoP (devops#42) makes zero-connection-loss switchover the standard for every container on the stack, with the blue-green sequence as the app-container class's procedure.
 
 Developer directive (2026-11-09, to all container repos): the switchover-without-connection-issues procedure becomes SoP here too — "this needs to be a rule for *ALL* containers", with the goal shape stated as the executed blue-green sequence ("At no point is there a moment without a healthy upstream behind Caddy").
 
 ## Decision
 
-**SOP.md gains the aqv switchover section** — the blue-green sequence with the aqv container's specifics, conforming to the org runbook (devops#N).
+**SOP.md gains the aqv switchover section** — the blue-green sequence with the aqv container's specifics, conforming to the org runbook (devops#42).
 
 ## Developer statements (traceability base)
 
@@ -39,7 +39,7 @@ No script change in this ticket; the stage-script seam is R-3's recorded mapping
 
 ## Out of scope
 
-- The org runbook's content (devops#N's deliverable — this section conforms to it and names it).
+- The org runbook's content (devops#42's deliverable — this section conforms to it and names it).
 - Making the devops stage script (or any aqv deploy tooling) execute the blue-green sequence natively — open item for this ticket's plan.
 - The local build/run procedures SOP.md already records (unchanged — this ticket adds a section, it does not revise the build/run mandate).
 - The other containers' procedures (their own repos or the org runbook).
