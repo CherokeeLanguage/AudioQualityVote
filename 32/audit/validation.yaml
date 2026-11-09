@@ -1,0 +1,71 @@
+spec:
+  - round: 1
+    date: 2026-11-09
+    reviewer: fresh-context subagent (session ses_e3dbdf2d4ffcFRAJwNRc9QY2zx)
+    verdict: FAIL
+    findings:
+      - class: fabricated-claims + cross-reference-sufficiency
+        location: R-1 parenthetical
+        finding: >
+          R-1 claimed a `@aqvbare` named matcher in the Caddyfile; the cited
+          source of truth (caddy-vhost-58-stage.sh) implements the dual
+          bare/prefixed match as ONE named matcher carrying both path terms
+          (`@aqv path /AudioQualityVote /AudioQualityVote/*`). `aqvbare`
+          exists in neither repository.
+        classification: finding
+        remediation: >
+          R-1 corrected in place to the single-matcher dual-path form, verified
+          against the stage script. Remote body reconciled (gh issue edit 32).
+      - class: fabricated-claims + blast-radius
+        location: Consumers / blast radius
+        finding: >
+          The spec asserted a dev-host aqv replica (vhost-175) as a rehearsal
+          surface; no grounding artifact places aqv there (stage script, probe,
+          and SOP.md all target vhost-58; devops#32's "replica" is legacy
+          content trees, not a serving stack).
+        classification: finding
+        remediation: >
+          Removed the phantom surface from blast radius and Done state; the
+          evidence event is the flip window of an executed aqv deploy (SC-3's
+          pending-work form already pinned). Remote body reconciled.
+      - class: incapable-instrument (defect class 5)
+        location: SC-2 instrument
+        finding: >
+          The "secret-pattern check" answers a weaker question than the
+          criterion's absolute claim (an arbitrary held value matches no
+          pattern); the capable instrument — comparison against the actual held
+          values at their recorded paths — exists and is cheap.
+        classification: finding
+        remediation: >
+          SC-2's instrument replaced with the capable form: content comparison
+          of the section against the operator-held values at their recorded
+          paths (/srv/audioqualityvote/secrets/*; the .env key names the stage
+          script declares). Remote body reconciled.
+      - class: gap-analysis + research-adequacy + cross-reference-sufficiency
+        location: Problem; R-3
+        finding: >
+          The spec framed the devops stage script as the aqv replacement path
+          while SOP.md records audio-quality-vote-war/deploy-dict.sh as "the
+          repo's single deploy script" targeting a different compose project
+          (/srv/stack/audio-quality-vote, service audio-quality-vote); the two
+          arrangements were unreconciled.
+        classification: finding
+        remediation: >
+          Problem restated with both recorded paths (both in-place recreates —
+          the gap class applies to either); R-3 rewritten as the
+          deployment-surface reconciliation requirement: the section names both
+          arrangements, states which is serving anchored to the recorded
+          evidence (the phase-4 post-state capture of 2026-11-03 and the probe
+          instrument both target /srv/audioqualityvote with container_name aqv —
+          the name the Caddyfile dials), maps the canonical-recreate step onto
+          it, and states the other path's standing explicitly. Open item and
+          out-of-scope lines aligned. Remote body reconciled.
+  - round: 2
+    date: 2026-11-09
+    reviewer: fresh-context subagent (session ses_e3db80417ffer7AJ2s7AwKVGPH)
+    verdict: PASS
+    findings: []
+    notes: >
+      Zero findings on the revised artifact; all four round-1 findings
+      verified remediated; containment both prongs pass. Loop exits clean.
+
