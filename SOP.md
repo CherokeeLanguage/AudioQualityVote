@@ -101,6 +101,125 @@ the production deployment. `vhost-175.cherokeedictionary.net`
 there, not on the prod host. Org-side fact record: cherokeelanguage-devops
 `docs/infrastructure/host-roles-vhost-58-vhost-175.md`.
 
+## aqv container switchover (zero-connection-loss image replacement behind Caddy)
+
+This is this repository's instance of the org runbook for zero-connection-loss
+container switchover on the vhost-58 serving stack — cherokeelanguage-devops#42
+(the blue-green SoP of record for every container on the stack); the aqv
+procedure below conforms to it. The problem it retires: every aqv replacement
+path recreates the container in place — compose stops the old container before
+its replacement is healthy, so the `/AudioQualityVote` route 502s for the
+recreate+boot window. The rule: **at no point is there a moment without a
+healthy upstream behind Caddy.**
+
+### The two recorded compose arrangements (reconciliation)
+
+The repo records two compose arrangements for this application; the
+switchover sequence operates on the serving one:
+
+- **Serving arrangement — the devops-staged tree `/srv/audioqualityvote`**
+  (service `aqv`, `container_name: aqv`, image `aqv:<version>`). This is the
+  arrangement that serves traffic: the phase-4 post-state capture of
+  2026-11-03 (cherokeelanguage-devops#13's `phase4-poststate-final-mconrad.txt`
+  record — `docker ps` showing `aqv aqv:1.1.0
+  Up`, the staged compose.yaml with service `aqv`, and the Caddyfile grep
+  showing `reverse_proxy aqv:8080`) and the probe instrument
+  (`audioqualityvote-vhost-58-probe.sh`, which inspects `docker`'s `aqv`
+  container and the `/srv/audioqualityvote` tree) both record it as the
+  deployed state, and `aqv` is the container name the Caddyfile dials.
+  The canonical-recreate step of the sequence below maps onto this
+  arrangement.
+- **The repo deploy-script tree** — `/srv/stack/audio-quality-vote` (service
+  `audio-quality-vote`, per `audio-quality-vote-war/deploy-dict.sh` and the
+  Deployment section above). Its standing: **superseded as the serving
+  arrangement** — it is not the compose project Caddy's upstream resolves
+  through. The script's war-ship step remains the path that delivers the
+  built product into the aqv image's build context (the image packages the
+  gretty application-export product, AudioQualityVote#26); image changes for
+  the serving arrangement ride the `aqv:<version>` pinning convention the
+  serving arrangement's stage script records
+  (`audioqualityvote-vhost-58-stage.sh`).
+
+### The switchover sequence (operator-executed, on `vhost-58`)
+
+For an image change to version `<new>` (prior image `aqv:<old>`):
+
+1. **Build/ship the new image.** Produce the product export through the
+   project wrapper (`./gradlew` only — the build/run mandate above), ship it
+   into the aqv image build context, and build/tag it `aqv:<new>` on the
+   host (per `audioqualityvote-vhost-58-stage.sh`'s image-build step). The
+   `aqv:<old>` image stays on the host — retained until the full gate
+   passes (rollback rule below).
+2. **Boot `aqv-next` alongside.** Run the new image as container `aqv-next`
+   from a compose file derived from the serving arrangement's
+   `/srv/audioqualityvote/compose.yaml` with: `container_name: aqv-next`,
+   `image: aqv:<new>`, and no change to anything else — the same env contract
+   (the operator-held `.env` values `GITHUB_CLIENT_ID` and `DB_USER`
+   interpolated the same way, plus the fixed values `DB_HOST=mariadb`,
+   `DB_PORT=3306`, `DB_NAME=audio_quality_vote`, `AUDIO_FOLDER=/srv/ingest`),
+   the same secrets delivered by path (`DB_PASSWORD_FILE=/run/secrets/db_password`,
+   `GITHUB_CLIENT_SECRET_FILE=/run/secrets/github_client_secret` — secret
+   values are never in any repo artifact; key names and paths only), the same
+   external networks `proxy` and `backend`, the same
+   `mem_limit`/`memswap_limit` 512m, the same read-only ingest mount
+   `/srv/audioqualityvote/ingest:/srv/ingest:ro`, and no host ports (zero
+   port conflict by design). `docker compose up -d aqv-next`.
+3. **Health-gate `aqv-next`.** Poll until an HTTP check of the
+   `/AudioQualityVote` context path from inside the container network
+   (e.g. `docker exec aqv-next curl -fsS -o /dev/null -w '%{http_code}'
+   http://localhost:8080/AudioQualityVote/`) returns a 200-class code —
+   several consecutive successes, not one.
+4. **Verify `aqv-next` serves directly** through the `proxy` network before
+   touching Caddy (a request against `http://aqv-next:8080/AudioQualityVote/`
+   from another container on that network, e.g. caddy's namespace via
+   `docker compose -f /srv/caddy/compose.yaml exec caddy curl -fsS -o
+   /dev/null -w '%{http_code}' http://aqv-next:8080/AudioQualityVote/`).
+5. **Atomic Caddy flip.** In `/srv/caddy/caddy/Caddyfile`, the aqv handle
+   block is one named matcher carrying both path terms:
+
+       @aqv path /AudioQualityVote /AudioQualityVote/*
+       handle @aqv {
+           reverse_proxy aqv:8080
+       }
+
+   Change **only** the upstream token — `reverse_proxy aqv:8080` →
+   `reverse_proxy aqv-next:8080` — nothing else in the block. Then validate
+   and reload:
+
+       docker compose -f /srv/caddy/compose.yaml exec caddy caddy validate --config /etc/caddy/Caddyfile   # must exit 0
+       docker compose -f /srv/caddy/compose.yaml exec caddy caddy reload --config /etc/caddy/Caddyfile      # graceful reload — in-flight requests preserved
+
+   If `caddy validate` exits non-zero, fix the Caddyfile or revert the edit
+   and re-validate — never reload an invalid config.
+6. **Canonical recreate.** Traffic now serves from `aqv-next`; recreate the
+   canonical `aqv` container with the new image (update the serving
+   arrangement's `/srv/audioqualityvote/compose.yaml` `image:` to
+   `aqv:<new>`, then `docker compose -f /srv/audioqualityvote/compose.yaml
+   up -d aqv` — the recreate is invisible to users, who are on `aqv-next`).
+7. **Flip back.** Verify the recreated `aqv` with steps 3–4's checks against
+   `aqv`, then reverse step 5's token (`aqv-next:8080` → `aqv:8080`), again
+   `caddy validate` exit 0 then graceful reload.
+8. **Drain.** After the flip back, stop and remove `aqv-next`
+   (`docker compose -f <next-compose-file> down`). The `aqv:<new>` image is
+   now the serving image.
+9. **Full gate.** The `/AudioQualityVote` route's checks through the edge
+   (a request to `https://<host>/AudioQualityVote/` returning 200-class
+   responses, plus the probe instrument's aqv sections
+   `audioqualityvote-vhost-58-probe.sh`).
+
+### Continuity bar and rollback rule
+
+- **Continuity bar:** a request loop through the edge across the whole
+  flip window (steps 5–7) reports **zero failed requests**. This is the
+  acceptance gate for the procedure — run it (a tight loop of edge requests
+  to `/AudioQualityVote` across the flip, counting non-200 responses), and
+  record the capture on the deploy's issue.
+- **Rollback rule:** the prior image tag `aqv:<old>` is retained on the host
+  until the full gate passes. A failed gate flips traffic back — reverse the
+  step-5/step-7 token edit (validate + graceful reload) so Caddy serves the
+  still-healthy container, and never perform manual server surgery
+  (no ad-hoc container surgery, no firewall/DNS changes) as a substitute.
+
 ## Failure policy (from the developer, mandatory)
 
 Hiding or papering over errors is a serious policy violation. Failure branches surface as
