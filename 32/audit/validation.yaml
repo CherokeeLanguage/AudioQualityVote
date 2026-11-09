@@ -69,3 +69,28 @@ spec:
       Zero findings on the revised artifact; all four round-1 findings
       verified remediated; containment both prongs pass. Loop exits clean.
 
+  - round: plan-1
+    date: 2026-11-09
+    reviewer: fresh-context subagent (session ses_e3daa7aa3ffecc7baolTUVVRN1)
+    verdict: FAIL
+    findings:
+      - class: escape-hatch/unreal-instrument
+        location: Item 2 instrument
+        finding: "if present qualifier on the .env comparison made the no-secret-values assertion evadable; the /srv/audioqualityvote/secrets/* source leg was dropped."
+        remediation: "Both legs made unconditional: .env presence asserted; host-held secrets covered by provenance + names-only/literal-form assertions."
+      - class: untestable-RED
+        location: Item 2 RED
+        finding: "RED did not name the grep patterns; any term choice satisfied it."
+        remediation: "Exact patterns specified (zero failed requests / prior image tag) against the post-Item-1 file."
+  - round: plan-2
+    date: 2026-11-09
+    reviewer: fresh-context subagent (session ses_e3da94d08ffeOmIihTTU9h1rK5)
+    verdict: PASS
+    findings: []
+    notes: "Both round-1 remediations verified; whole-plan pass clean."
+  - round: verify-1
+    date: 2026-11-09
+    reviewer: fresh-context subagent (session ses_e3da6ba3fffe1mHZMmmnidjO6u)
+    verdict: PASS
+    findings: []
+    notes: "Deliverable (SOP.md section, commit d4a46b9) checked against R-1/R-2/R-3, SC-1/SC-2, and the recorded devops evidence; SC-3 confirmed pending-by-spec."
