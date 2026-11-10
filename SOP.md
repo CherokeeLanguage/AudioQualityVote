@@ -92,6 +92,9 @@ the environment keys (`DB_*` plus the application keys `AUDIO_FOLDER`,
 `vhost.cherokeedictionary.net`'s Tomcat) is superseded — see also the
 deprecation notice in `deploy-dict.sh`'s header (AudioQualityVote#25).
 
+Every deploy step here is gated by the standing pre-flight/post-flight
+container-check gate (the section below — cherokeelanguage-devops#56).
+
 ### Host roles (2026-11-09, operator directive — AudioQualityVote#30)
 
 `vhost-58.cherokeedictionary.net` (104.251.216.58, the delivered Docker
@@ -100,6 +103,43 @@ the production deployment. `vhost-175.cherokeedictionary.net`
 (63.142.255.175, = ced1) is the **dev host** — dev-stack work lands
 there, not on the prod host. Org-side fact record: cherokeelanguage-devops
 `docs/infrastructure/host-roles-vhost-58-vhost-175.md`.
+
+## Standing pre-flight/post-flight container-check gate (2026-11-10 — sibling of cherokeelanguage-devops#56)
+
+The rule of record for every deploy and container-work step on the vhost-58
+serving stack is the standing pre-flight/post-flight container check — defined
+once, org-side, in cherokeelanguage-devops'
+[container-sop-checks.md](https://github.com/CherokeeLanguage/cherokeelanguage-devops/blob/main/docs/runbooks/container-sop-checks.md)
+(spec cherokeelanguage-devops#56, the response to the devops#54 empty-200
+outage). This SoP states **when** it runs in this repo's deploy flow; the
+check's definitions and instrument (`container-sop-checks.sh`) live only in
+that master page — linked, never copied.
+
+### When the check runs in this repo's deploy flow
+
+The gate is two-phase, and its exit code is the gate:
+
+- **Pre-flight:** `bash container-sop-checks.sh` must exit **0** before any
+  deploy step starts — before any `deploy-dict.sh` invocation and before the
+  first step of the aqv switchover sequence below. A non-zero pre-flight
+  result means: stop, do not deploy.
+- **Post-flight:** the same check is re-run after the deploy step completes
+  and must exit **0** — a non-zero post-flight result means the work is not
+  done.
+- **Capture-with-work:** both captured runs — pre-flight and post-flight —
+  are recorded with the work (on the deploy's issue) alongside the other
+  verification captures.
+
+### This repo's container/route inventory on the shared stack
+
+- **`aqv`** — the AudioQualityVote vote application
+  (`aqv:<version>`, service `aqv`, container `aqv`), serving behind the
+  **`/AudioQualityVote`** route on `cherokeedictionary.net` (the Caddy edge on
+  `vhost-58`) — the route the master page's body-level sweep includes.
+- **Networks:** `aqv` also sits on the **`backend`** network — it is the
+  role-check client the master page's backend check probes for MariaDB
+  reachability (`mariadb:3306` TCP connect from a backend-attached app
+  container).
 
 ## aqv container switchover (zero-connection-loss image replacement behind Caddy)
 
