@@ -220,6 +220,21 @@ For an image change to version `<new>` (prior image `aqv:<old>`):
   still-healthy container, and never perform manual server surgery
   (no ad-hoc container surgery, no firewall/DNS changes) as a substitute.
 
+## Logging (2026-11-10 — cherokeelanguage-devops#48 delivery)
+
+- **Container log mirror:** `/var/log/containers/aqv/current.log` on
+  `vhost-58` (the prod host per Host roles above). The `vector` stream
+  shipper (cherokeelanguage-devops#48) captures the `aqv` container's
+  stdout/stderr verbatim, one event per line; the mirror persists across
+  container recreation and daily rotation (30-day history, dated copies).
+- **Contract:** console-first — stdout/stderr stream capture requires no
+  per-repo configuration; a file-based log instrument this app enables in
+  the future must mount under the `/var/log/containers/` tree to inherit
+  the drop-in's rotation.
+- **Runbook of record:** cherokeelanguage-devops
+  `docs/runbooks/logging-vhost-58.md` (cherokeelanguage-devops#48) —
+  deploy, probe, and rollback for the logging stack live there.
+
 ## Failure policy (from the developer, mandatory)
 
 Hiding or papering over errors is a serious policy violation. Failure branches surface as
