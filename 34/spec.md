@@ -8,12 +8,12 @@ the logging paradigm cherokeelanguage-devops#48 delivered on vhost-58
 `/var/log/containers/`, the daily/30-day `copytruncate` logrotate drop-in,
 and the Caddy access log). This repo's deploy/ops record
 (`SOP.md`) predates that delivery and states nothing about where the
-`dict-app` container's logs now live.
+`aqv` container's logs now live.
 
 ## Problem
 
 1. `SOP.md` (the container's operating index) predates the logging stack: an
-   operator following it has no statement of the `dict-app` log-mirror path,
+   operator following it has no statement of the `aqv` log-mirror path,
    no statement that console lines persist across container recreation, and
    no pointer to the contract that governs future changes.
 2. The #48 record (its deployed state verified 2026-11-10: all SCs green;
